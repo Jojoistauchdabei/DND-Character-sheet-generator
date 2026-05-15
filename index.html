@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D 5E Charakterbogen</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Crimson Text', serif; background: #faf6ee; color: #2a1a0e; padding: 20px; }
+    
+    .container { max-width: 1000px; margin: 0 auto; }
+    
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .header h1 { 
+      font-family: 'Cinzel', serif; 
+      font-size: 26px; 
+      color: #8b5a2b; 
+      letter-spacing: 2px; 
+    }
+    
+    .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    
+    button {
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      padding: 8px 16px;
+      background: #8b5a2b;
+      color: #faf6ee;
+      border: 2px solid #8b5a2b;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    button:hover { background: #654321; }
+    button.inactive { background: #f0e8d5; color: #5c3a1e; }
+    
+    .nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    
+    .page { display: none; }
+    .page.active { display: block; }
+    
+    .box {
+      border: 2px solid #8b5a2b;
+      background: #faf6ee;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    
+    label {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      color: #8b5a2b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      font-family: 'Crimson Text', serif;
+      font-size: 14px;
+      color: #2a1a0e;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #c9a87c;
+      padding: 4px 6px;
+      width: 100%;
+      outline: none;
+    }
+    
+    input:disabled,
+    textarea:disabled {
+      background: #f0e8d5;
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+    
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+    .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .grid6 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 8px; }
+    
+    .attr-tile {
+      border: 2px solid #8b5a2b;
+      background: #f0e8d5;
+      text-align: center;
+      padding: 10px 6px;
+    }
+    
+    .attr-tile-name {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      color: #8b5a2b;
+      margin-bottom: 4px;
+    }
+    
+    .attr-tile-mod {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      font-weight: bold;
+      color: #8b5a2b;
+      margin-bottom: 4px;
+    }
+    
+    .attr-tile input {
+      border: 1px solid #c9a87c;
+      background: #faf6ee;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      text-align: center;
+      padding: 2px;
+      width: 50px;
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 12px 0 8px;
+    }
+    
+    .divider-line { flex: 1; border-top: 1px solid #c9a87c; }
+    
+    .divider-title {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      color: #8b5a2b;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    
+    .skill-item {
+      display: flex;
+      align-items: center;
+      padding: 4px 2px;
+      border-bottom: 1px solid #e5d5c0;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    .skill-item .dot {
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid #8b5a2b;
+      border-radius: 50%;
+      margin-right: 6px;
+      flex-shrink: 0;
+    }
+    
+    .skill-item .dot.checked { background: #8b5a2b; }
+    
+    .skill-name { flex: 1; }
+    .skill-attr { font-size: 10px; color: #8b5a2b; margin: 0 6px; }
+    .skill-bonus { font-weight: bold; color: #5c3a1e; min-width: 30px; text-align: right; }
+    .skill-expert {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      border: 1px solid #8b5a2b;
+      color: #8b5a2b;
+      padding: 1px 4px;
+      border-radius: 2px;
+      margin-left: 6px;
+      opacity: 0.2;
+    }
+    .skill-expert.active { background: #8b5a2b; color: #faf6ee; opacity: 1; }
+
+    .checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .checkbox-field input { width: 16px; height: 16px; }
+    
+    .display-value {
+      border: 1px solid #8b5a2b;
+      background: #f0e8d5;
+      padding: 4px 6px;
+      text-align: center;
+    }
+    
+    .display-value input {
+      background: transparent;
+      border: none;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: bold;
+      color: #8b5a2b;
+      text-align: center;
+    }
+    
+    .display-value-label {
+      font-family: 'Cinzel', serif;
+      font-size: 8px;
+      color: #8b5a2b;
+    }
+    
+    .weight-field { position: relative; width: 100%; }
+    .weight-field input { padding-right: 18px; }
+    .weight-field::after {
+      content: "kg";
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: #8b5a2b;
+      pointer-events: none;
+    }
+
+    .textarea-field textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field-header label { margin-bottom: 0; }
+
+    .field-actions { display: flex; gap: 6px; }
+
+    .mini-button {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      padding: 4px 8px;
+      background: #f0e8d5;
+      color: #5c3a1e;
+      border: 1px solid #c9a87c;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .mini-button:hover { background: #e6d6bf; }
+    .mini-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .image-preview {
+      margin-top: 8px;
+      height: 160px;
+      border: 1px dashed #c9a87c;
+      background: #f0e8d5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: #8b5a2b;
+      font-size: 11px;
+    }
+
+    .image-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚔ D&D CHARAKTERBOGEN ⚔</h1>
+      <div class="buttons">
+        <button onclick="exportJSON()">⬇ Export JSON</button>
+        <button onclick="document.getElementById('importFile').click()">⬆ Import JSON</button>
+        <button onclick="exportPDF()">⬇ Export PDF</button>
+        <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
+        <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
+        <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
+      </div>
+    </div>
+
+    <div class="nav" id="nav"></div>
+
+    <!-- SEITE 1 -->
+    <div class="page active" id="page1">
+      <div class="box">
+        <div class="grid3">
+          <div>
+            <label>Charaktername</label>
+            <input type="text" id="charaktername" onchange="save()">
+          </div>
+          <div>
+            <label>Spielername</label>
+            <input type="text" id="spielername" onchange="save()">
+          </div>
+          <div>
+            <label>Erfahrungspunkte</label>
+            <input type="number" id="erfahrungspunkte" onchange="save()">
+          </div>
+        </div>
+        <div class="grid4" style="margin-top: 12px;">
+          <div>
+            <label>Klasse</label>
+            <input type="text" id="klasse" onchange="save()">
+          </div>
+          <div>
+            <label>Stufe</label>
+            <input type="number" id="stufe" min="1" max="20" onchange="save(); updateCalcs()">
+          </div>
+          <div>
+            <label>Volk</label>
+            <input type="text" id="volk" onchange="save()">
+          </div>
+          <div>
+            <label>Hintergrund</label>
+            <input type="text" id="hintergrund" onchange="save()">
+          </div>
+        </div>
+      </div>
+
+      <div class="grid6">
+        <div class="attr-tile">
+          <div class="attr-tile-name">Stärke</div>
+          <input type="number" id="stärke" min="1" max="30" value="0" onchange="save(); updateCalcs()">
+          <div class="attr-tile-name" style="margin-top: 4px;">STR</div>
+          <div class="attr-tile-mod" id="mod-STR">+0</div>
+        </div>
+        <div class="attr-tile">
+          <div class="attr-tile-name">Geschicklichkeit</div>
+          <input type="number" id="geschicklichkeit" min="1" max="30" value="0" onchange="save(); updateCalcs()">
+          <div class="attr-tile-name" style="margin-top: 4px;">GES</div>
+          <div class="attr-tile-mod" id="mod-GES">+0</div>
+        </div>
+        <div class="attr-tile">
+          <div class="attr-tile-name">Konstitution</div>
+          <input type="number" id="konstitution" min="1" max="30" value="0" onchange="save(); updateCalcs()">
+          <div class="attr-tile-name" style="margin-top: 4px;">KON</div>
+          <div class="attr-tile-mod" id="mod-KON">+0</div>
+        </div>
+        <div class="attr-tile">
+          <div class="attr-tile-name">Intelligenz</div>
+          <input type="number" id="intelligenz" min="1" max="30" value="0" onchange="save(); updateCalcs()">
+          <div class="attr-tile-name" style="margin-top: 4px;">INT</div>
+          <div class="attr-tile-mod" id="mod-INT">+0</div>
+        </div>
+        <div class="attr-tile">
+          <div class="attr-tile-name">Weisheit</div>
+          <input type="number" id="weisheit" min="1" max="30" value="0" onchange="save(); updateCalcs()">
+          <div class="attr-tile-name" style="margin-top: 4px;">WEI</div>
+          <div class="attr-tile-mod" id="mod-WEI">+0</div>
+        </div>
+        <div class="attr-tile">
+          <div class="attr-tile-name">Charisma</div>
+          <input type="number" id="charisma" min="1" max="30" value="0" onchange="save(); updateCalcs()">
+          <div class="attr-tile-name" style="margin-top: 4px;">CHA</div>
+          <div class="attr-tile-mod" id="mod-CHA">+0</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="box">
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <label>Inspiration</label>
+              <div style="width: 28px; height: 28px; border: 2px solid #8b5a2b; background: transparent; cursor: pointer;" id="inspiration-box" onclick="toggleInspiration()"></div>
+            </div>
+            <div style="flex: 1;">
+              <label>Übungsbonus</label>
+              <div style="font-family: 'Cinzel', serif; font-size: 18px; font-weight: bold; color: #8b5a2b; margin-top: 4px;" id="prof-bonus">+2</div>
+            </div>
+          </div>
+
+          <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-title">Kampfwerte</div>
+            <div class="divider-line"></div>
+          </div>
+
+          <div class="grid4" style="margin-bottom: 10px;">
+            <div class="display-value">
+              <input type="text" id="ac-auto" disabled value="10">
+              <div class="display-value-label">Rüstungsklasse Auto</div>
+            </div>
+            <div>
+              <label>Rüstungsklasse Bonus</label>
+              <input type="number" id="ac" value="0" onchange="save(); updateCalcs()">
+            </div>
+            <div>
+              <label>Rüstungsart</label>
+              <select id="rüstungstyp" onchange="save(); updateCalcs()">
+                <option value="Keine">Keine</option>
+                <optgroup label="Leichte Rüstung">
+                  <option value="Gepolsterte Rüstung">Gepolsterte Rüstung</option>
+                  <option value="Leder">Leder</option>
+                  <option value="Genietetes Leder">Genietetes Leder</option>
+                </optgroup>
+                <optgroup label="Mittlere Rüstung">
+                  <option value="Fellrüstung">Fellrüstung</option>
+                  <option value="Kettenhemd">Kettenhemd</option>
+                  <option value="Schuppenpanzer">Schuppenpanzer</option>
+                  <option value="Brustplatte">Brustplatte</option>
+                  <option value="Halbe Platte">Halbe Platte</option>
+                </optgroup>
+                <optgroup label="Schwere Rüstung">
+                  <option value="Ringpanzer">Ringpanzer</option>
+                  <option value="Kettenpanzer">Kettenpanzer</option>
+                  <option value="Schienenpanzer">Schienenpanzer</option>
+                  <option value="Plattenpanzer">Plattenpanzer</option>
+                </optgroup>
+              </select>
+            </div>
+            <div>
+              <label>Schild</label>
+              <div class="checkbox-field">
+                <input type="checkbox" id="schild" onchange="save(); updateCalcs()">
+                <span>Getragen</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid3" style="margin-bottom: 12px;">
+            <div>
+              <label>Initiative Bonus</label>
+              <input type="number" id="initiative" value="0" onchange="save(); updateCalcs()">
+            </div>
+            <div class="display-value">
+              <input type="text" id="initiative-display" disabled value="+0">
+              <div class="display-value-label">Initiative gesamt</div>
+            </div>
+            <div>
+              <label>Bewegungsrate (m)</label>
+              <input type="number" id="bewegungsrate" value="0" onchange="save()">
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div>
+              <label>TP Maximum</label>
+              <input type="number" id="tpmax" min="0" value="0" onchange="save()">
+            </div>
+            <div>
+              <label>TP Aktuell</label>
+              <input type="number" id="tpakt" min="0" value="0" onchange="save()">
+            </div>
+            <div>
+              <label>TP Temporär</label>
+              <input type="number" id="tptemp" min="0" value="0" onchange="save()">
+            </div>
+          </div>
+
+          <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-title">Fertigkeiten</div>
+            <div class="divider-line"></div>
+          </div>
+          <div id="fertigkeiten-list" style="max-height: 250px; overflow-y: auto;"></div>
+
+          <div style="margin-top: 12px; background: #f0e8d5; border: 1px solid #c9a87c; padding: 6px 8px; font-size: 12px; text-align: center;">
+            <strong>Passive Wahrnehmung: <span id="passive-perc">10</span></strong>
+          </div>
+        </div>
+
+        <div class="box textarea-field">
+          <label>Persönlichkeitsmerkmale</label>
+          <textarea id="persönlichkeit" onchange="save()"></textarea>
+          <label>Ideale</label>
+          <textarea id="ideale" onchange="save()"></textarea>
+          <label>Bindungen</label>
+          <textarea id="bindungen" onchange="save()"></textarea>
+          <label>Makel</label>
+          <textarea id="makel" onchange="save()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEITE 2 -->
+    <div class="page" id="page2">
+      <div class="box">
+        <div class="grid6">
+          <div>
+            <label>Alter</label>
+            <input type="text" id="alter" onchange="save()">
+          </div>
+          <div>
+            <label>Glaube/Gottheit</label>
+            <input type="text" id="glaube" onchange="save()">
+          </div>
+          <div>
+            <label>Größenkategorie</label>
+            <input type="text" id="größenkategorie" onchange="save()">
+          </div>
+          <div>
+            <label>Körpergröße</label>
+            <input type="text" id="körpergröße" onchange="save()">
+          </div>
+          <div>
+            <label>Gewicht</label>
+            <input type="text" id="gewicht" onchange="save()">
+          </div>
+          <div>
+            <label>Geschlecht</label>
+            <input type="text" id="geschlecht" onchange="save()">
+          </div>
+        </div>
+        <div class="grid3" style="margin-top: 12px;">
+          <div>
+            <label>Gesinnung</label>
+            <input type="text" id="gesinnung" onchange="save()">
+          </div>
+          <div>
+            <label>Augenfarbe</label>
+            <input type="text" id="augenfarbe" onchange="save()">
+          </div>
+          <div>
+            <label>Haarfarbe</label>
+            <input type="text" id="haarfarbe" onchange="save()">
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="box textarea-field">
+          <div class="field-header">
+            <label>Aussehen</label>
+            <div class="field-actions">
+              <button type="button" class="mini-button" onclick="document.getElementById('aussehenBildFile').click()">Bild importieren</button>
+              <button type="button" class="mini-button" id="aussehenBildRemove" onclick="clearAussehenBild()" disabled>Bild entfernen</button>
+            </div>
+          </div>
+          <textarea id="aussehen" onchange="save()" style="min-height: 120px;"></textarea>
+          <div id="aussehenBildPreview" class="image-preview">
+            <span>Kein Bild</span>
+          </div>
+          <input id="aussehenBildFile" type="file" accept="image/*" onchange="importAussehenBild(event)" style="display: none;">
+          <input id="aussehenBild" type="hidden">
+        </div>
+        <div class="box textarea-field">
+          <label>Hintergrundgeschichte</label>
+          <textarea id="hintergrundgeschichte" onchange="save()" style="min-height: 120px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEITE 3 -->
+    <div class="page" id="page3">
+      <div class="box">
+        <div class="grid4">
+          <div>
+            <label>Zauberwirkende Klasse</label>
+            <input type="text" id="zaubklasse" onchange="save()">
+          </div>
+          <div>
+            <label>Attribut</label>
+            <input type="text" id="zaubattr" onchange="save(); updateCalcs()">
+          </div>
+          <div>
+            <label>Zauber-SG</label>
+            <input type="number" id="zaubsg" value="0" onchange="save()">
+          </div>
+          <div class="display-value">
+            <input type="text" id="auto-zaubsg" disabled value="8">
+            <div class="display-value-label">Auto-SG</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="box">
+          <label style="margin-bottom: 8px; font-size: 11px;">ZAUBERTRICKS (0)</label>
+          <div id="zaubertricks-list"></div>
+        </div>
+        <div class="box">
+          <label style="margin-bottom: 8px; font-size: 11px;">STUFE 1</label>
+          <div id="zauber1-list"></div>
+        </div>
+        <div class="box">
+          <label style="margin-bottom: 8px; font-size: 11px;">STUFE 2</label>
+          <div id="zauber2-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEITE 4 -->
+    <div class="page" id="page4">
+      <div class="box">
+        <label style="margin-bottom: 12px;">Inventar</label>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+          <tr style="border-bottom: 1px solid #8b5a2b;">
+            <th style="text-align: left; padding: 4px; font-family: 'Cinzel', serif; font-size: 10px;">Gegenstand</th>
+            <th style="text-align: center; padding: 4px; font-family: 'Cinzel', serif; font-size: 10px;">Anz.</th>
+            <th style="text-align: center; padding: 4px; font-family: 'Cinzel', serif; font-size: 10px;">Gew. (kg)</th>
+          </tr>
+          <tbody id="inventar-list"></tbody>
+        </table>
+
+        <div class="divider" style="margin-top: 0;">
+          <div class="divider-line"></div>
+          <div class="divider-title">Währung</div>
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="grid3">
+          <div style="text-align: center;">
+            <label>GM</label>
+            <input type="number" id="währung-gm" min="0" value="0" onchange="save()" style="text-align: center;">
+          </div>
+          <div style="text-align: center;">
+            <label>SM</label>
+            <input type="number" id="währung-sm" min="0" value="0" onchange="save()" style="text-align: center;">
+          </div>
+          <div style="text-align: center;">
+            <label>KM</label>
+            <input type="number" id="währung-km" min="0" value="0" onchange="save()" style="text-align: center;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script>
+    const klassen = ["Barbar","Barde","Kleriker","Druide","Kämpfer","Mönch","Paladin","Waldläufer","Schurke","Zauberer","Hexenmeister","Magier"];
+    const völker = ["Zwerg","Elf","Gnom","Halbelf","Halbork","Halbling","Mensch","Teuflingsblut","Drachenkind"];
+    const hintergründe = ["Akoluth","Betrüger","Krimineller","Unterhalter","Volksheld","Gildenhandwerker","Einsiedler","Adliger","Ausgestoßener","Weiser","Seemann","Soldat","Waisenkind","Söldner"];
+    const fertigkeiten = [
+      { name:"Akrobatik", attr:"GES" }, { name:"Arkane Kunde", attr:"INT" },
+      { name:"Athletik", attr:"STR" }, { name:"Auftreten", attr:"CHA" },
+      { name:"Einschüchtern", attr:"CHA" }, { name:"Fingerfertigkeit", attr:"GES" },
+      { name:"Geschichte", attr:"INT" }, { name:"Heilkunde", attr:"WEI" },
+      { name:"Heimlichkeit", attr:"GES" }, { name:"Mit Tieren umgehen", attr:"WEI" },
+      { name:"Motiv erkennen", attr:"WEI" }, { name:"Nachforschungen", attr:"INT" },
+      { name:"Naturkunde", attr:"INT" }, { name:"Religion", attr:"INT" },
+      { name:"Täuschen", attr:"CHA" }, { name:"Überlebenskunst", attr:"WEI" },
+      { name:"Überzeugen", attr:"CHA" }, { name:"Wahrnehmung", attr:"WEI" },
+    ];
+
+    const attrMap = { STR:"stärke", GES:"geschicklichkeit", KON:"konstitution", INT:"intelligenz", WEI:"weisheit", CHA:"charisma" };
+
+    const baseAc = 10;
+    const armorData = {
+      "Keine": { bonus: 0, dexCap: null },
+      "Gepolsterte Rüstung": { bonus: 1, dexCap: null },
+      "Leder": { bonus: 1, dexCap: null },
+      "Genietetes Leder": { bonus: 2, dexCap: null },
+      "Fellrüstung": { bonus: 2, dexCap: 2 },
+      "Kettenhemd": { bonus: 3, dexCap: 2 },
+      "Schuppenpanzer": { bonus: 4, dexCap: 2 },
+      "Brustplatte": { bonus: 4, dexCap: 2 },
+      "Halbe Platte": { bonus: 5, dexCap: 2 },
+      "Ringpanzer": { bonus: 4, dexCap: 0 },
+      "Kettenpanzer": { bonus: 6, dexCap: 0 },
+      "Schienenpanzer": { bonus: 7, dexCap: 0 },
+      "Plattenpanzer": { bonus: 8, dexCap: 0 }
+    };
+
+    function normalizeSkillProfs(raw) {
+      const normalized = {};
+      fertigkeiten.forEach(s => {
+        let v = raw && raw[s.name];
+        if (v === true) v = 1;
+        if (v === false || v == null) v = 0;
+        if (typeof v === 'string') {
+          const parsed = parseInt(v, 10);
+          v = Number.isNaN(parsed) ? 0 : parsed;
+        }
+        if (typeof v !== 'number') v = 0;
+        v = Math.max(0, Math.min(2, v));
+        normalized[s.name] = v;
+      });
+      return normalized;
+    }
+
+    let skillProfs = normalizeSkillProfs();
+
+    const getMod = (v) => Math.floor((v - 10) / 2);
+    const getProf = (lvl) => 2 + Math.floor((lvl - 1) / 4);
+    const fmtMod = (v) => v >= 0 ? `+${v}` : `${v}`;
+
+    const pdfLibSources = [
+      'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js',
+      'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'
+    ];
+    let pdfLibPromise = null;
+
+    function loadPdfLibFrom(src) {
+      return new Promise((resolve, reject) => {
+        if (window.PDFLib) {
+          resolve();
+          return;
+        }
+        const existing = document.querySelector(`script[data-pdf-lib="${src}"]`);
+        if (existing) {
+          existing.addEventListener('load', () => resolve());
+          existing.addEventListener('error', () => reject(new Error('PDF-Lib konnte nicht geladen werden.')));
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.dataset.pdfLib = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('PDF-Lib konnte nicht geladen werden.'));
+        document.head.appendChild(script);
+      });
+    }
+
+    async function ensurePdfLib() {
+      if (window.PDFLib) return;
+      if (!pdfLibPromise) {
+        pdfLibPromise = (async () => {
+          for (const src of pdfLibSources) {
+            try {
+              await loadPdfLibFrom(src);
+              if (window.PDFLib) return;
+            } catch (err) {
+              // Try next CDN
+            }
+          }
+          throw new Error('PDF-Lib konnte nicht geladen werden.');
+        })();
+      }
+      return pdfLibPromise;
+    }
+
+    function init() {
+      // Navigation
+      const nav = document.getElementById('nav');
+      for (let i = 1; i <= 4; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = `Seite ${i}`;
+        btn.onclick = () => showPage(i);
+        if (i === 1) btn.classList.add('active');
+        nav.appendChild(btn);
+      }
+
+      // Fertigkeiten
+      const skillList = document.getElementById('fertigkeiten-list');
+      fertigkeiten.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'skill-item';
+        div.id = `skill-${s.name}`;
+        div.onclick = () => toggleSkill(s.name);
+        skillList.appendChild(div);
+      });
+
+      // Zaubertricks
+      for (let i = 0; i < 10; i++) {
+        const div = document.createElement('div');
+        div.style.marginBottom = '4px';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `zauber-trick-${i}`;
+        input.onchange = () => save();
+        div.appendChild(input);
+        document.getElementById('zaubertricks-list').appendChild(div);
+      }
+
+      // Zauber
+      [1, 2].forEach(lvl => {
+        const list = document.getElementById(`zauber${lvl}-list`);
+        for (let i = 0; i < 12; i++) {
+          const div = document.createElement('div');
+          div.style.marginBottom = '4px';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = `zauber-${lvl}-${i}`;
+          input.onchange = () => save();
+          div.appendChild(input);
+          list.appendChild(div);
+        }
+      });
+
+      // Inventar
+      const invList = document.getElementById('inventar-list');
+      for (let i = 0; i < 18; i++) {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #e5d5c0';
+        tr.innerHTML = `
+          <td style="padding: 2px;"><input type="text" id="inv-name-${i}" onchange="save()" style="border: none; background: transparent; border-bottom: 1px solid #c9a87c; width: 100%;"></td>
+          <td style="padding: 2px; text-align: center; width: 40px;"><input type="number" id="inv-anz-${i}" min="0" onchange="save()" style="width: 100%; border: none; background: transparent; border-bottom: 1px solid #c9a87c; text-align: center;"></td>
+          <td style="padding: 2px; text-align: center; width: 70px;">
+            <div class="weight-field">
+              <input type="number" id="inv-gew-${i}" step="0.1" min="0" onchange="save()" style="width: 100%; border: none; background: transparent; border-bottom: 1px solid #c9a87c; text-align: center;">
+            </div>
+          </td>
+        `;
+        invList.appendChild(tr);
+      }
+
+      load();
+      updateCalcs();
+    }
+
+    function showPage(n) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page' + n).classList.add('active');
+      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.nav button')[n-1].classList.add('active');
+    }
+
+    function collectData() {
+      const data = {};
+      document.querySelectorAll('input[type="text"], input[type="number"], input[type="checkbox"], input[type="hidden"], textarea, select').forEach(el => {
+        if (el.id && el.id !== 'importFile' && el.id !== 'importPdfFile' && el.id !== 'initiative-display' && el.id !== 'auto-zaubsg' && el.id !== 'passive-perc' && el.id !== 'ac-auto') {
+          if (el.type === 'checkbox') {
+            data[el.id] = el.checked;
+          } else {
+            data[el.id] = el.value;
+          }
+        }
+      });
+      data.skillProfs = skillProfs;
+      return data;
+    }
+
+    function applyData(data) {
+      if (data.skillProfs) {
+        skillProfs = normalizeSkillProfs(data.skillProfs);
+      }
+      setAussehenBild('');
+      Object.keys(data).forEach(key => {
+        if (key === 'skillProfs') return;
+        if (key === 'aussehenBild') {
+          setAussehenBild(data[key]);
+          return;
+        }
+        const el = document.getElementById(key);
+        if (el) {
+          if (el.type === 'checkbox') {
+            const v = data[key];
+            el.checked = (v === true || v === 'true' || v === 1 || v === '1');
+          } else {
+            el.value = data[key];
+          }
+        }
+      });
+    }
+
+    function save() {
+      const data = collectData();
+      localStorage.setItem('dndChar', JSON.stringify(data));
+    }
+
+    function load() {
+      const saved = localStorage.getItem('dndChar');
+      if (saved) {
+        const data = JSON.parse(saved);
+        applyData(data);
+      }
+    }
+
+    function setAussehenBild(dataUrl) {
+      const hidden = document.getElementById('aussehenBild');
+      const preview = document.getElementById('aussehenBildPreview');
+      const removeBtn = document.getElementById('aussehenBildRemove');
+      if (hidden) hidden.value = dataUrl || '';
+      if (!preview) return;
+      preview.innerHTML = '';
+      if (dataUrl) {
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = 'Aussehen Bild';
+        preview.appendChild(img);
+        if (removeBtn) removeBtn.disabled = false;
+      } else {
+        const span = document.createElement('span');
+        span.textContent = 'Kein Bild';
+        preview.appendChild(span);
+        if (removeBtn) removeBtn.disabled = true;
+      }
+    }
+
+    function importAussehenBild(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Bitte eine Bilddatei auswaehlen.');
+        event.target.value = '';
+        return;
+      }
+      const maxBytes = 2 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        alert('Bild ist zu gross (max 2 MB).');
+        event.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAussehenBild(e.target.result);
+        save();
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
+    function clearAussehenBild() {
+      setAussehenBild('');
+      const fileInput = document.getElementById('aussehenBildFile');
+      if (fileInput) fileInput.value = '';
+      save();
+    }
+
+    function updateCalcs() {
+      const attrs = {
+        STR: parseInt(document.getElementById('stärke').value) || 0,
+        GES: parseInt(document.getElementById('geschicklichkeit').value) || 0,
+        KON: parseInt(document.getElementById('konstitution').value) || 0,
+        INT: parseInt(document.getElementById('intelligenz').value) || 0,
+        WEI: parseInt(document.getElementById('weisheit').value) || 0,
+        CHA: parseInt(document.getElementById('charisma').value) || 0,
+      };
+
+      Object.keys(attrs).forEach(k => {
+        document.getElementById('mod-' + k).textContent = fmtMod(getMod(attrs[k]));
+      });
+
+      const lvlInput = document.getElementById('stufe');
+      const lvlRaw = parseInt(lvlInput.value);
+      const lvl = Math.min(20, Math.max(1, lvlRaw || 1));
+      if (lvl !== lvlRaw) lvlInput.value = lvl;
+      document.getElementById('prof-bonus').textContent = '+' + getProf(lvl);
+
+      const initBonus = parseInt(document.getElementById('initiative').value) || 0;
+      document.getElementById('initiative-display').value = fmtMod(getMod(attrs.GES) + initBonus);
+
+      const armorType = document.getElementById('rüstungstyp').value;
+      const armor = armorData[armorType] || armorData["Keine"];
+      const dexMod = getMod(attrs.GES);
+      const dexAdd = armor.dexCap === null ? dexMod : (armor.dexCap === 0 ? 0 : Math.min(dexMod, armor.dexCap));
+      const shieldBonus = document.getElementById('schild').checked ? 2 : 0;
+      const acBonus = parseInt(document.getElementById('ac').value) || 0;
+      const acAuto = baseAc + armor.bonus + dexAdd + shieldBonus + acBonus;
+      document.getElementById('ac-auto').value = acAuto;
+
+      const zaubAttr = document.getElementById('zaubattr').value;
+      const zaubMod = zaubAttr && attrs[zaubAttr] ? getMod(attrs[zaubAttr]) : 0;
+      document.getElementById('auto-zaubsg').value = (8 + getProf(lvl) + zaubMod);
+
+      const weiMod = getMod(attrs.WEI);
+      const percProf = skillProfs['Wahrnehmung'] || 0;
+      const percBonus = percProf === 2 ? getProf(lvl) * 2 : percProf === 1 ? getProf(lvl) : 0;
+      document.getElementById('passive-perc').textContent = 10 + weiMod + percBonus;
+
+      // Update Fertigkeiten UI
+      fertigkeiten.forEach(s => {
+        const attrKey = s.attr;
+        const profLevel = skillProfs[s.name] || 0;
+        const profBonus = profLevel === 2 ? getProf(lvl) * 2 : profLevel === 1 ? getProf(lvl) : 0;
+        const mod = getMod(attrs[attrKey]) + profBonus;
+        const el = document.getElementById(`skill-${s.name}`);
+        if (el) {
+          const isProf = profLevel >= 1;
+          const isExpert = profLevel === 2;
+          el.innerHTML = `
+            <div class="dot ${isProf ? 'checked' : ''}"></div>
+            <div class="skill-name">${s.name}</div>
+            <div class="skill-attr">(${s.attr})</div>
+            <div class="skill-bonus">${fmtMod(mod)}</div>
+            <div class="skill-expert ${isExpert ? 'active' : ''}">E</div>
+          `;
+        }
+      });
+
+      save();
+    }
+
+    function toggleSkill(name) {
+      const current = skillProfs[name] || 0;
+      const next = (current + 1) % 3;
+      skillProfs[name] = next;
+      updateCalcs();
+    }
+
+    function toggleInspiration() {
+      const box = document.getElementById('inspiration-box');
+      const hasClass = box.style.background === 'rgb(139, 90, 43)';
+      box.style.background = hasClass ? 'transparent' : '#8b5a2b';
+      save();
+    }
+
+    function exportJSON() {
+      const data = collectData();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (document.getElementById('charaktername').value || 'charakter') + '.json';
+      a.click();
+    }
+
+    function toBase64Utf8(text) {
+      const bytes = new TextEncoder().encode(text);
+      let binary = '';
+      bytes.forEach(b => { binary += String.fromCharCode(b); });
+      return btoa(binary);
+    }
+
+    function fromBase64Utf8(b64) {
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function embedJsonInPdf(pdfBytes, json) {
+      const base64 = toBase64Utf8(json);
+      const marker = `\n%%DNDJSON:${base64}\n%%ENDDNDJSON`;
+      const markerBytes = new TextEncoder().encode(marker);
+      const combined = new Uint8Array(pdfBytes.length + markerBytes.length);
+      combined.set(pdfBytes);
+      combined.set(markerBytes, pdfBytes.length);
+      return combined;
+    }
+
+    function extractJsonFromPdf(buffer) {
+      const text = new TextDecoder('latin1').decode(new Uint8Array(buffer));
+      const startMarker = '%%DNDJSON:';
+      const endMarker = '%%ENDDNDJSON';
+      const start = text.indexOf(startMarker);
+      if (start === -1) return null;
+      const end = text.indexOf(endMarker, start);
+      if (end === -1) return null;
+      const base64 = text.substring(start + startMarker.length, end).trim();
+      if (!base64) return null;
+      return fromBase64Utf8(base64);
+    }
+
+    async function exportPDF() {
+      try {
+        await ensurePdfLib();
+        if (!window.PDFLib) throw new Error('PDF-Lib konnte nicht geladen werden.');
+        const data = collectData();
+        const json = JSON.stringify(data);
+        const { PDFDocument, StandardFonts, rgb } = PDFLib;
+        const pdfDoc = await PDFDocument.create();
+        const standardFonts = StandardFonts || {};
+        const font = await pdfDoc.embedFont(standardFonts.TimesRoman || 'Times-Roman');
+        const fontBold = await pdfDoc.embedFont(standardFonts.TimesRomanBold || 'Times-Bold');
+
+      const pageSize = [595.28, 841.89];
+      const margin = 36;
+      const contentW = pageSize[0] - margin * 2;
+
+      const hexToRgb = (hex) => {
+        const clean = hex.replace('#', '');
+        const r = parseInt(clean.substring(0, 2), 16) / 255;
+        const g = parseInt(clean.substring(2, 4), 16) / 255;
+        const b = parseInt(clean.substring(4, 6), 16) / 255;
+        return rgb(r, g, b);
+      };
+
+      const colors = {
+        bg: hexToRgb('#faf6ee'),
+        panel: hexToRgb('#f0e8d5'),
+        ink: hexToRgb('#2a1a0e'),
+        accent: hexToRgb('#8b5a2b'),
+        border: hexToRgb('#c9a87c')
+      };
+
+      const yFromTop = (page, yTop) => page.getHeight() - yTop;
+
+      const getFontTopOffset = (usedFont, size) => {
+        if (usedFont && typeof usedFont.ascentAtSize === 'function') return usedFont.ascentAtSize(size);
+        if (usedFont && typeof usedFont.heightAtSize === 'function') return usedFont.heightAtSize(size);
+        return size;
+      };
+
+      const drawTextTop = (page, text, x, yTop, size, usedFont, color) => {
+        const offset = getFontTopOffset(usedFont, size);
+        page.drawText(text, { x, y: yFromTop(page, yTop) - offset, size, font: usedFont, color });
+      };
+
+      const safeText = (v) => (v == null || v === '' ? '-' : String(v));
+
+      const wrapText = (text, maxWidth, size, usedFont) => {
+        const lines = [];
+        const raw = safeText(text);
+        const paragraphs = raw.split(/\n+/);
+        paragraphs.forEach((p, idx) => {
+          const words = p.split(/\s+/).filter(Boolean);
+          let line = '';
+          words.forEach(word => {
+            const test = line ? line + ' ' + word : word;
+            const width = usedFont.widthOfTextAtSize(test, size);
+            if (width <= maxWidth) {
+              line = test;
+            } else {
+              if (line) lines.push(line);
+              line = word;
+            }
+          });
+          if (line) lines.push(line);
+          if (idx < paragraphs.length - 1) lines.push('');
+        });
+        return lines;
+      };
+
+      const fitText = (text, maxWidth, size, usedFont) => {
+        let out = String(text || '');
+        if (usedFont.widthOfTextAtSize(out, size) <= maxWidth) return out;
+        while (out.length > 0 && usedFont.widthOfTextAtSize(out + '...', size) > maxWidth) {
+          out = out.slice(0, -1);
+        }
+        return out.length ? out + '...' : '';
+      };
+
+      const drawBox = (page, x, yTop, w, h, label, value, opts = {}) => {
+        const labelSize = opts.labelSize || 8;
+        const valueSize = opts.valueSize || 11;
+        const padding = opts.padding || 6;
+        const fill = opts.fill !== false;
+        page.drawRectangle({
+          x,
+          y: yFromTop(page, yTop) - h,
+          width: w,
+          height: h,
+          borderColor: colors.border,
+          borderWidth: 1,
+          color: fill ? colors.panel : undefined
+        });
+        drawTextTop(page, label, x + padding, yTop + 4, labelSize, fontBold, colors.accent);
+        const textAreaWidth = w - padding * 2;
+        const textAreaHeight = h - 16;
+        const lines = wrapText(value, textAreaWidth, valueSize, font);
+        const maxLines = Math.max(1, Math.floor(textAreaHeight / (valueSize + 2)));
+        lines.slice(0, maxLines).forEach((line, i) => {
+          drawTextTop(page, line, x + padding, yTop + 16 + i * (valueSize + 2), valueSize, font, colors.ink);
+        });
+      };
+
+      const drawSectionTitle = (page, text, yTop) => {
+        drawTextTop(page, text.toUpperCase(), margin, yTop, 9, fontBold, colors.accent);
+        page.drawLine({
+          start: { x: margin, y: yFromTop(page, yTop + 12) },
+          end: { x: pageSize[0] - margin, y: yFromTop(page, yTop + 12) },
+          color: colors.border,
+          thickness: 1
+        });
+      };
+
+      const drawPageFrame = (page, title, pageNum) => {
+        page.drawRectangle({ x: 0, y: 0, width: pageSize[0], height: pageSize[1], color: colors.bg });
+        page.drawRectangle({ x: margin - 10, y: margin - 10, width: contentW + 20, height: pageSize[1] - (margin - 10) * 2, borderColor: colors.border, borderWidth: 1 });
+        page.drawRectangle({ x: margin - 5, y: margin - 5, width: contentW + 10, height: pageSize[1] - (margin - 5) * 2, borderColor: colors.accent, borderWidth: 1 });
+        drawTextTop(page, title, margin, 24, 12, fontBold, colors.accent);
+        drawTextTop(page, `Seite ${pageNum}/4`, pageSize[0] - margin - 60, 24, 9, fontBold, colors.accent);
+      };
+
+      const attrs = {
+        STR: parseInt(data['stärke']) || 0,
+        GES: parseInt(data['geschicklichkeit']) || 0,
+        KON: parseInt(data['konstitution']) || 0,
+        INT: parseInt(data['intelligenz']) || 0,
+        WEI: parseInt(data['weisheit']) || 0,
+        CHA: parseInt(data['charisma']) || 0
+      };
+      const mods = {
+        STR: getMod(attrs.STR),
+        GES: getMod(attrs.GES),
+        KON: getMod(attrs.KON),
+        INT: getMod(attrs.INT),
+        WEI: getMod(attrs.WEI),
+        CHA: getMod(attrs.CHA)
+      };
+      const lvl = Math.min(20, Math.max(1, parseInt(data['stufe']) || 1));
+      const prof = getProf(lvl);
+      const initBonus = parseInt(data['initiative']) || 0;
+      const initTotal = mods.GES + initBonus;
+
+      const armorType = data['rüstungstyp'] || 'Keine';
+      const armor = armorData[armorType] || armorData['Keine'];
+      const dexAdd = armor.dexCap === null ? mods.GES : (armor.dexCap === 0 ? 0 : Math.min(mods.GES, armor.dexCap));
+      const shieldBonus = data['schild'] ? 2 : 0;
+      const acBonus = parseInt(data['ac']) || 0;
+      const acAuto = baseAc + armor.bonus + dexAdd + shieldBonus + acBonus;
+
+      const p1 = pdfDoc.addPage(pageSize);
+      drawPageFrame(p1, 'D&D Charakterbogen', 1);
+
+      let y = 56;
+      drawSectionTitle(p1, 'Basis', y);
+      y += 16;
+      const gap = 8;
+      const row1W = (contentW - gap * 2) / 3;
+      drawBox(p1, margin, y, row1W, 32, 'Charaktername', data['charaktername']);
+      drawBox(p1, margin + row1W + gap, y, row1W, 32, 'Spielername', data['spielername']);
+      drawBox(p1, margin + (row1W + gap) * 2, y, row1W, 32, 'Erfahrungspunkte', data['erfahrungspunkte']);
+      y += 40;
+      const row2W = (contentW - gap * 3) / 4;
+      drawBox(p1, margin, y, row2W, 32, 'Klasse', data['klasse']);
+      drawBox(p1, margin + row2W + gap, y, row2W, 32, 'Stufe', lvl);
+      drawBox(p1, margin + (row2W + gap) * 2, y, row2W, 32, 'Volk', data['volk']);
+      drawBox(p1, margin + (row2W + gap) * 3, y, row2W, 32, 'Hintergrund', data['hintergrund']);
+
+      y += 48;
+      drawSectionTitle(p1, 'Attribute', y);
+      y += 16;
+      const attrW = (contentW - gap * 5) / 6;
+      const attrH = 50;
+      const attrKeys = ['STR', 'GES', 'KON', 'INT', 'WEI', 'CHA'];
+      attrKeys.forEach((k, i) => {
+        const x = margin + i * (attrW + gap);
+        const val = attrs[k];
+        const mod = fmtMod(mods[k]);
+        drawBox(p1, x, y, attrW, attrH, k, `${val}  (${mod})`, { valueSize: 12 });
+      });
+
+      y += attrH + 18;
+      drawSectionTitle(p1, 'Kampfwerte', y);
+      y += 16;
+      const row3W = (contentW - gap * 3) / 4;
+      drawBox(p1, margin, y, row3W, 32, 'Ruestungsklasse Auto', acAuto);
+      drawBox(p1, margin + row3W + gap, y, row3W, 32, 'Ruestungsklasse Bonus', acBonus);
+      drawBox(p1, margin + (row3W + gap) * 2, y, row3W, 32, 'Ruestungsart', armorType);
+      drawBox(p1, margin + (row3W + gap) * 3, y, row3W, 32, 'Schild', data['schild'] ? 'Getragen' : '-');
+
+      y += 40;
+      const row4W = (contentW - gap * 2) / 3;
+      drawBox(p1, margin, y, row4W, 32, 'Initiative Bonus', initBonus);
+      drawBox(p1, margin + row4W + gap, y, row4W, 32, 'Initiative Gesamt', fmtMod(initTotal));
+      drawBox(p1, margin + (row4W + gap) * 2, y, row4W, 32, 'Bewegungsrate (m)', data['bewegungsrate']);
+
+      y += 40;
+      drawBox(p1, margin, y, row4W, 32, 'TP Maximum', data['tpmax']);
+      drawBox(p1, margin + row4W + gap, y, row4W, 32, 'TP Aktuell', data['tpakt']);
+      drawBox(p1, margin + (row4W + gap) * 2, y, row4W, 32, 'TP Temporaer', data['tptemp']);
+
+      y += 50;
+      drawSectionTitle(p1, 'Fertigkeiten', y);
+      y += 16;
+      const listH = 160;
+      const colW = (contentW - gap) / 2;
+      const lineSize = 9;
+      const lineHeight = 12;
+      const drawSkillColumn = (x, yTop, skills) => {
+        p1.drawRectangle({ x, y: yFromTop(p1, yTop) - listH, width: colW, height: listH, borderColor: colors.border, borderWidth: 1, color: colors.panel });
+        skills.forEach((s, idx) => {
+          const profLevel = skillProfs[s.name] || 0;
+          const profBonus = profLevel === 2 ? prof * 2 : profLevel === 1 ? prof : 0;
+          const bonus = getMod(attrs[s.attr]) + profBonus;
+          const label = `${s.name} (${s.attr})`;
+          const labelMax = colW - 54;
+          const labelText = fitText(label, labelMax, lineSize, font);
+          const mark = profLevel === 2 ? 'E' : profLevel === 1 ? 'P' : '';
+          drawTextTop(p1, labelText, x + 6, yTop + 6 + idx * lineHeight, lineSize, font, colors.ink);
+          const bonusText = fmtMod(bonus);
+          const bonusWidth = fontBold.widthOfTextAtSize(bonusText, lineSize);
+          drawTextTop(p1, bonusText, x + colW - 18 - bonusWidth, yTop + 6 + idx * lineHeight, lineSize, fontBold, colors.accent);
+          if (mark) drawTextTop(p1, mark, x + colW - 12, yTop + 6 + idx * lineHeight, lineSize, fontBold, colors.accent);
+        });
+      };
+      drawSkillColumn(margin, y, fertigkeiten.slice(0, 9));
+      drawSkillColumn(margin + colW + gap, y, fertigkeiten.slice(9));
+      y += listH + 16;
+      const percProf = skillProfs['Wahrnehmung'] || 0;
+      const percBonus = percProf === 2 ? prof * 2 : percProf === 1 ? prof : 0;
+      const passivePerc = 10 + mods.WEI + percBonus;
+      drawBox(p1, margin, y, 160, 28, 'Passive Wahrnehmung', passivePerc, { valueSize: 12 });
+
+      const p2 = pdfDoc.addPage(pageSize);
+      drawPageFrame(p2, 'Hintergrund', 2);
+      y = 56;
+      drawSectionTitle(p2, 'Details', y);
+      y += 16;
+      const detailW = (contentW - gap * 2) / 3;
+      drawBox(p2, margin, y, detailW, 32, 'Alter', data['alter']);
+      drawBox(p2, margin + detailW + gap, y, detailW, 32, 'Glaube/Gottheit', data['glaube']);
+      drawBox(p2, margin + (detailW + gap) * 2, y, detailW, 32, 'Groessenkategorie', data['größenkategorie']);
+      y += 40;
+      drawBox(p2, margin, y, detailW, 32, 'Koerpergroesse', data['körpergröße']);
+      drawBox(p2, margin + detailW + gap, y, detailW, 32, 'Gewicht (kg)', data['gewicht']);
+      drawBox(p2, margin + (detailW + gap) * 2, y, detailW, 32, 'Geschlecht', data['geschlecht']);
+      y += 40;
+      drawBox(p2, margin, y, detailW, 32, 'Gesinnung', data['gesinnung']);
+      drawBox(p2, margin + detailW + gap, y, detailW, 32, 'Augenfarbe', data['augenfarbe']);
+      drawBox(p2, margin + (detailW + gap) * 2, y, detailW, 32, 'Haarfarbe', data['haarfarbe']);
+
+      y += 48;
+      drawSectionTitle(p2, 'Aussehen & Geschichte', y);
+      y += 16;
+      const textW = (contentW - gap) / 2;
+      drawBox(p2, margin, y, textW, 120, 'Aussehen', data['aussehen'], { valueSize: 9 });
+      drawBox(p2, margin + textW + gap, y, textW, 120, 'Hintergrundgeschichte', data['hintergrundgeschichte'], { valueSize: 9 });
+
+      y += 136;
+      drawSectionTitle(p2, 'Persoenlichkeit', y);
+      y += 16;
+      drawBox(p2, margin, y, textW, 90, 'Persoenlichkeitsmerkmale', data['persönlichkeit'], { valueSize: 9 });
+      drawBox(p2, margin + textW + gap, y, textW, 90, 'Ideale', data['ideale'], { valueSize: 9 });
+      y += 106;
+      drawBox(p2, margin, y, textW, 90, 'Bindungen', data['bindungen'], { valueSize: 9 });
+      drawBox(p2, margin + textW + gap, y, textW, 90, 'Makel', data['makel'], { valueSize: 9 });
+
+      const p3 = pdfDoc.addPage(pageSize);
+      drawPageFrame(p3, 'Zauber', 3);
+      y = 56;
+      drawSectionTitle(p3, 'Zauberwerte', y);
+      y += 16;
+      const zW = (contentW - gap * 3) / 4;
+      drawBox(p3, margin, y, zW, 32, 'Zauberklasse', data['zaubklasse']);
+      drawBox(p3, margin + zW + gap, y, zW, 32, 'Attribut', data['zaubattr']);
+      drawBox(p3, margin + (zW + gap) * 2, y, zW, 32, 'Zauber-SG', data['zaubsg']);
+      drawBox(p3, margin + (zW + gap) * 3, y, zW, 32, 'Auto-SG', 8 + prof + (mods[data['zaubattr']] || 0));
+
+      y += 48;
+      drawSectionTitle(p3, 'Zauberlisten', y);
+      y += 16;
+      const spellW = (contentW - gap * 2) / 3;
+      const spellH = 520;
+      const drawSpellList = (title, startId, count, x) => {
+        p3.drawRectangle({ x, y: yFromTop(p3, y) - spellH, width: spellW, height: spellH, borderColor: colors.border, borderWidth: 1, color: colors.panel });
+        drawTextTop(p3, title, x + 6, y + 4, 9, fontBold, colors.accent);
+        const lineSize = 9;
+        const lineHeight = 12;
+        for (let i = 0; i < count; i++) {
+          const key = `${startId}${i}`;
+          const val = data[key] || '';
+          drawTextTop(p3, val || '-', x + 6, y + 20 + i * lineHeight, lineSize, font, colors.ink);
+        }
+      };
+      drawSpellList('Zaubertricks (0)', 'zauber-trick-', 10, margin);
+      drawSpellList('Stufe 1', 'zauber-1-', 12, margin + spellW + gap);
+      drawSpellList('Stufe 2', 'zauber-2-', 12, margin + (spellW + gap) * 2);
+
+      const p4 = pdfDoc.addPage(pageSize);
+      drawPageFrame(p4, 'Inventar', 4);
+      y = 56;
+      drawSectionTitle(p4, 'Inventar', y);
+      y += 16;
+      const tableH = 520;
+      p4.drawRectangle({ x: margin, y: yFromTop(p4, y) - tableH, width: contentW, height: tableH, borderColor: colors.border, borderWidth: 1, color: colors.panel });
+      drawTextTop(p4, 'Gegenstand', margin + 6, y + 4, 9, fontBold, colors.accent);
+      drawTextTop(p4, 'Anz.', margin + contentW - 120, y + 4, 9, fontBold, colors.accent);
+      drawTextTop(p4, 'Gew. (kg)', margin + contentW - 60, y + 4, 9, fontBold, colors.accent);
+      const rowHeight = 14;
+      for (let i = 0; i < 18; i++) {
+        const rowY = y + 20 + i * rowHeight;
+        const name = data[`inv-name-${i}`] || '';
+        const anz = data[`inv-anz-${i}`] || '';
+        const gew = data[`inv-gew-${i}`] || '';
+        drawTextTop(p4, name || '-', margin + 6, rowY, 9, font, colors.ink);
+        drawTextTop(p4, String(anz || '-'), margin + contentW - 115, rowY, 9, font, colors.ink);
+        drawTextTop(p4, String(gew || '-'), margin + contentW - 60, rowY, 9, font, colors.ink);
+      }
+
+      y += tableH + 24;
+      drawSectionTitle(p4, 'Waehrung', y);
+      y += 16;
+      const coinW = (contentW - gap * 2) / 3;
+      drawBox(p4, margin, y, coinW, 32, 'GM', data['währung-gm']);
+      drawBox(p4, margin + coinW + gap, y, coinW, 32, 'SM', data['währung-sm']);
+      drawBox(p4, margin + (coinW + gap) * 2, y, coinW, 32, 'KM', data['währung-km']);
+
+        const pdfBytes = await pdfDoc.save();
+        const pdfWithData = embedJsonInPdf(pdfBytes, json);
+        const blob = new Blob([pdfWithData], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (data.charaktername || 'charakter') + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (err) {
+        console.error(err);
+        alert('PDF-Export fehlgeschlagen: ' + err.message);
+      }
+    }
+
+    async function importPDF(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const buffer = await file.arrayBuffer();
+        const json = extractJsonFromPdf(buffer);
+        if (!json) throw new Error('Keine eingebetteten JSON-Daten gefunden.');
+        const data = JSON.parse(json);
+        applyData(data);
+        updateCalcs();
+        alert('✓ PDF erfolgreich importiert!');
+      } catch (err) {
+        alert('✗ Fehler: ' + err.message);
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          applyData(data);
+          updateCalcs();
+          alert('✓ Charakter erfolgreich importiert!');
+        } catch (err) {
+          alert('✗ Fehler: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    init();
+  </script>
+</body>
+</html>
