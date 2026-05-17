@@ -7,7 +7,50 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Crimson Text', serif; background-color: #faf6ee; background-image: url('altes_Papier.png'); color: #2a1a0e; padding: 20px; }
+
+    :root {
+      --bg: #faf6ee;
+      --bg-image: url('altes_Papier.png');
+      --text: #2a1a0e;
+      --accent: #8b5a2b;
+      --accent-dark: #654321;
+      --accent-muted: #5c3a1e;
+      --border: #c9a87c;
+      --border-light: #e5d5c0;
+      --surface: rgba(250, 246, 238, 0.8);
+      --surface-strong: rgba(240, 232, 213, 0.82);
+      --field-bg: rgba(250, 246, 238, 0.6);
+      --disabled-bg: rgba(240, 232, 213, 0.7);
+      --button-bg: #8b5a2b;
+      --button-text: #faf6ee;
+      --button-inactive-bg: rgba(240, 232, 213, 0.8);
+      --button-inactive-text: #5c3a1e;
+      --mini-button-hover-bg: rgba(230, 214, 191, 0.8);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1b1410;
+        --bg-image: none;
+        --text: #f3e9db;
+        --accent: #d6a670;
+        --accent-dark: #b07b46;
+        --accent-muted: #d1b38f;
+        --border: #6a4a31;
+        --border-light: #3d2b1d;
+        --surface: rgba(34, 25, 19, 0.85);
+        --surface-strong: rgba(44, 32, 24, 0.85);
+        --field-bg: rgba(55, 41, 30, 0.6);
+        --disabled-bg: rgba(55, 41, 30, 0.45);
+        --button-bg: #7a5332;
+        --button-text: #f9f1e7;
+        --button-inactive-bg: rgba(60, 44, 32, 0.7);
+        --button-inactive-text: #d3b89a;
+        --mini-button-hover-bg: rgba(86, 61, 43, 0.7);
+      }
+    }
+
+    body { font-family: 'Crimson Text', serif; background-color: var(--bg); background-image: var(--bg-image); color: var(--text); padding: 20px; }
 
     .container { max-width: 1000px; margin: 0 auto; }
 
@@ -23,7 +66,7 @@
     .header h1 {
       font-family: 'Cinzel', serif;
       font-size: 26px;
-      color: #8b5a2b;
+      color: var(--accent);
       letter-spacing: 2px;
     }
 
@@ -33,15 +76,15 @@
       font-family: 'Cinzel', serif;
       font-size: 12px;
       padding: 8px 16px;
-      background: #8b5a2b;
-      color: #faf6ee;
-      border: 2px solid #8b5a2b;
+      background: var(--button-bg);
+      color: var(--button-text);
+      border: 2px solid var(--accent);
       cursor: pointer;
       transition: background 0.2s;
     }
 
-    button:hover { background: #654321; }
-    button.inactive { background: #f0e8d5; color: #5c3a1e; }
+    button:hover { background: var(--accent-dark); }
+    button.inactive { background: var(--button-inactive-bg); color: var(--button-inactive-text); }
 
     .nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
 
@@ -49,8 +92,8 @@
     .page.active { display: block; }
 
     .box {
-      border: 2px solid #8b5a2b;
-      background: #faf6ee;
+      border: 2px solid var(--accent);
+      background: var(--surface);
       padding: 15px;
       margin-bottom: 15px;
     }
@@ -58,7 +101,7 @@
     label {
       font-family: 'Cinzel', serif;
       font-size: 10px;
-      color: #8b5a2b;
+      color: var(--accent);
       text-transform: uppercase;
       letter-spacing: 1px;
       display: block;
@@ -71,10 +114,10 @@
     select {
       font-family: 'Crimson Text', serif;
       font-size: 14px;
-      color: #2a1a0e;
-      background: transparent;
+      color: var(--text);
+      background: var(--field-bg);
       border: none;
-      border-bottom: 1px solid #c9a87c;
+      border-bottom: 1px solid var(--border);
       padding: 4px 6px;
       width: 100%;
       outline: none;
@@ -82,7 +125,7 @@
 
     input:disabled,
     textarea:disabled {
-      background: #f0e8d5;
+      background: var(--disabled-bg);
       cursor: not-allowed;
       opacity: 0.8;
     }
@@ -94,8 +137,8 @@
     .grid6 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 8px; }
 
     .attr-tile {
-      border: 2px solid #8b5a2b;
-      background: #f0e8d5;
+      border: 2px solid var(--accent);
+      background: var(--surface-strong);
       text-align: center;
       padding: 10px 6px;
     }
@@ -103,7 +146,7 @@
     .attr-tile-name {
       font-family: 'Cinzel', serif;
       font-size: 9px;
-      color: #8b5a2b;
+      color: var(--accent);
       margin-bottom: 4px;
     }
 
@@ -111,13 +154,13 @@
       font-family: 'Cinzel', serif;
       font-size: 20px;
       font-weight: bold;
-      color: #8b5a2b;
+      color: var(--accent);
       margin-bottom: 4px;
     }
 
     .attr-tile input {
-      border: 1px solid #c9a87c;
-      background: #faf6ee;
+      border: 1px solid var(--border);
+      background: var(--field-bg);
       font-family: 'Cinzel', serif;
       font-size: 14px;
       text-align: center;
@@ -132,12 +175,12 @@
       margin: 12px 0 8px;
     }
 
-    .divider-line { flex: 1; border-top: 1px solid #c9a87c; }
+    .divider-line { flex: 1; border-top: 1px solid var(--border); }
 
     .divider-title {
       font-family: 'Cinzel', serif;
       font-size: 9px;
-      color: #8b5a2b;
+      color: var(--accent);
       letter-spacing: 1px;
       text-transform: uppercase;
       white-space: nowrap;
@@ -147,7 +190,7 @@
       display: flex;
       align-items: center;
       padding: 4px 2px;
-      border-bottom: 1px solid #e5d5c0;
+      border-bottom: 1px solid var(--border-light);
       cursor: pointer;
       font-size: 13px;
     }
@@ -155,28 +198,28 @@
     .skill-item .dot {
       width: 10px;
       height: 10px;
-      border: 1.5px solid #8b5a2b;
+      border: 1.5px solid var(--accent);
       border-radius: 50%;
       margin-right: 6px;
       flex-shrink: 0;
     }
 
-    .skill-item .dot.checked { background: #8b5a2b; }
+    .skill-item .dot.checked { background: var(--accent); }
 
     .skill-name { flex: 1; }
-    .skill-attr { font-size: 10px; color: #8b5a2b; margin: 0 6px; }
-    .skill-bonus { font-weight: bold; color: #5c3a1e; min-width: 30px; text-align: right; }
+    .skill-attr { font-size: 10px; color: var(--accent); margin: 0 6px; }
+    .skill-bonus { font-weight: bold; color: var(--accent-muted); min-width: 30px; text-align: right; }
     .skill-expert {
       font-family: 'Cinzel', serif;
       font-size: 9px;
-      border: 1px solid #8b5a2b;
-      color: #8b5a2b;
+      border: 1px solid var(--accent);
+      color: var(--accent);
       padding: 1px 4px;
       border-radius: 2px;
       margin-left: 6px;
       opacity: 0.2;
     }
-    .skill-expert.active { background: #8b5a2b; color: #faf6ee; opacity: 1; }
+    .skill-expert.active { background: var(--accent); color: var(--button-text); opacity: 1; }
 
     .checkbox-field {
       display: flex;
@@ -186,9 +229,15 @@
     }
     .checkbox-field input { width: 16px; height: 16px; }
 
+    #inspiration-box {
+      border: 2px solid var(--accent);
+      background: var(--field-bg);
+    }
+    #inspiration-box.active { background: var(--accent); }
+
     .display-value {
-      border: 1px solid #8b5a2b;
-      background: #f0e8d5;
+      border: 1px solid var(--accent);
+      background: var(--surface-strong);
       padding: 4px 6px;
       text-align: center;
     }
@@ -199,14 +248,14 @@
       font-family: 'Cinzel', serif;
       font-size: 14px;
       font-weight: bold;
-      color: #8b5a2b;
+      color: var(--accent);
       text-align: center;
     }
 
     .display-value-label {
       font-family: 'Cinzel', serif;
       font-size: 8px;
-      color: #8b5a2b;
+      color: var(--accent);
     }
 
     .weight-field { position: relative; width: 100%; }
@@ -218,7 +267,7 @@
       top: 50%;
       transform: translateY(-50%);
       font-size: 10px;
-      color: #8b5a2b;
+      color: var(--accent);
       pointer-events: none;
     }
 
@@ -242,26 +291,26 @@
       font-family: 'Cinzel', serif;
       font-size: 10px;
       padding: 4px 8px;
-      background: #f0e8d5;
-      color: #5c3a1e;
-      border: 1px solid #c9a87c;
+      background: var(--surface-strong);
+      color: var(--accent-muted);
+      border: 1px solid var(--border);
       cursor: pointer;
       transition: background 0.2s;
     }
 
-    .mini-button:hover { background: #e6d6bf; }
+    .mini-button:hover { background: var(--mini-button-hover-bg); }
     .mini-button:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .image-preview {
       margin-top: 8px;
       height: 160px;
-      border: 1px dashed #c9a87c;
-      background: #f0e8d5;
+      border: 1px dashed var(--border);
+      background: var(--surface-strong);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      color: #8b5a2b;
+      color: var(--accent);
       font-size: 11px;
     }
 
@@ -380,11 +429,11 @@
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <div style="flex: 1;">
               <label>Inspiration</label>
-              <div style="width: 28px; height: 28px; border: 2px solid #8b5a2b; background: transparent; cursor: pointer;" id="inspiration-box" onclick="toggleInspiration()"></div>
+              <div style="width: 28px; height: 28px; cursor: pointer;" id="inspiration-box" onclick="toggleInspiration()"></div>
             </div>
             <div style="flex: 1;">
               <label>Übungsbonus</label>
-              <div style="font-family: 'Cinzel', serif; font-size: 18px; font-weight: bold; color: #8b5a2b; margin-top: 4px;" id="prof-bonus">+2</div>
+              <div style="font-family: 'Cinzel', serif; font-size: 18px; font-weight: bold; color: var(--accent); margin-top: 4px;" id="prof-bonus">+2</div>
             </div>
           </div>
 
@@ -473,7 +522,7 @@
           </div>
           <div id="fertigkeiten-list" style="max-height: 250px; overflow-y: auto;"></div>
 
-          <div style="margin-top: 12px; background: #f0e8d5; border: 1px solid #c9a87c; padding: 6px 8px; font-size: 12px; text-align: center;">
+          <div style="margin-top: 12px; background: var(--surface-strong); border: 1px solid var(--border); padding: 6px 8px; font-size: 12px; text-align: center;">
             <strong>Passive Wahrnehmung: <span id="passive-perc">10</span></strong>
           </div>
         </div>
@@ -632,7 +681,7 @@
       <div class="box">
         <label style="margin-bottom: 12px;">Inventar</label>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
-          <tr style="border-bottom: 1px solid #8b5a2b;">
+          <tr style="border-bottom: 1px solid var(--accent);">
             <th style="text-align: left; padding: 4px; font-family: 'Cinzel', serif; font-size: 10px;">Gegenstand</th>
             <th style="text-align: center; padding: 4px; font-family: 'Cinzel', serif; font-size: 10px;">Anz.</th>
             <th style="text-align: center; padding: 4px; font-family: 'Cinzel', serif; font-size: 10px;">Gew. (kg)</th>
@@ -823,13 +872,13 @@
       const invList = document.getElementById('inventar-list');
       for (let i = 0; i < 18; i++) {
         const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #e5d5c0';
+        tr.style.borderBottom = '1px solid var(--border-light)';
         tr.innerHTML = `
-          <td style="padding: 2px;"><input type="text" id="inv-name-${i}" onchange="save()" style="border: none; background: transparent; border-bottom: 1px solid #c9a87c; width: 100%;"></td>
-          <td style="padding: 2px; text-align: center; width: 40px;"><input type="number" id="inv-anz-${i}" min="0" onchange="save()" style="width: 100%; border: none; background: transparent; border-bottom: 1px solid #c9a87c; text-align: center;"></td>
+          <td style="padding: 2px;"><input type="text" id="inv-name-${i}" onchange="save()" style="border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); width: 100%;"></td>
+          <td style="padding: 2px; text-align: center; width: 40px;"><input type="number" id="inv-anz-${i}" min="0" onchange="save()" style="width: 100%; border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); text-align: center;"></td>
           <td style="padding: 2px; text-align: center; width: 70px;">
             <div class="weight-field">
-              <input type="number" id="inv-gew-${i}" step="0.1" min="0" onchange="save()" style="width: 100%; border: none; background: transparent; border-bottom: 1px solid #c9a87c; text-align: center;">
+              <input type="number" id="inv-gew-${i}" step="0.1" min="0" onchange="save()" style="width: 100%; border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); text-align: center;">
             </div>
           </td>
         `;
@@ -1077,8 +1126,7 @@
 
     function toggleInspiration() {
       const box = document.getElementById('inspiration-box');
-      const hasClass = box.style.background === 'rgb(139, 90, 43)';
-      box.style.background = hasClass ? 'transparent' : '#8b5a2b';
+      box.classList.toggle('active');
       save();
     }
 
