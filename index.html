@@ -8,27 +8,27 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Crimson Text', serif; background: #faf6ee; color: #2a1a0e; padding: 20px; }
-    
+
     .container { max-width: 1000px; margin: 0 auto; }
-    
-    .header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      margin-bottom: 20px; 
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
       flex-wrap: wrap;
       gap: 10px;
     }
-    
-    .header h1 { 
-      font-family: 'Cinzel', serif; 
-      font-size: 26px; 
-      color: #8b5a2b; 
-      letter-spacing: 2px; 
+
+    .header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 26px;
+      color: #8b5a2b;
+      letter-spacing: 2px;
     }
-    
+
     .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-    
+
     button {
       font-family: 'Cinzel', serif;
       font-size: 12px;
@@ -39,22 +39,22 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-    
+
     button:hover { background: #654321; }
     button.inactive { background: #f0e8d5; color: #5c3a1e; }
-    
+
     .nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
-    
+
     .page { display: none; }
     .page.active { display: block; }
-    
+
     .box {
       border: 2px solid #8b5a2b;
       background: #faf6ee;
       padding: 15px;
       margin-bottom: 15px;
     }
-    
+
     label {
       font-family: 'Cinzel', serif;
       font-size: 10px;
@@ -64,7 +64,7 @@
       display: block;
       margin-bottom: 4px;
     }
-    
+
     input[type="text"],
     input[type="number"],
     textarea,
@@ -79,34 +79,34 @@
       width: 100%;
       outline: none;
     }
-    
+
     input:disabled,
     textarea:disabled {
       background: #f0e8d5;
       cursor: not-allowed;
       opacity: 0.8;
     }
-    
+
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
     .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
     .grid6 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 8px; }
-    
+
     .attr-tile {
       border: 2px solid #8b5a2b;
       background: #f0e8d5;
       text-align: center;
       padding: 10px 6px;
     }
-    
+
     .attr-tile-name {
       font-family: 'Cinzel', serif;
       font-size: 9px;
       color: #8b5a2b;
       margin-bottom: 4px;
     }
-    
+
     .attr-tile-mod {
       font-family: 'Cinzel', serif;
       font-size: 20px;
@@ -114,7 +114,7 @@
       color: #8b5a2b;
       margin-bottom: 4px;
     }
-    
+
     .attr-tile input {
       border: 1px solid #c9a87c;
       background: #faf6ee;
@@ -124,16 +124,16 @@
       padding: 2px;
       width: 50px;
     }
-    
+
     .divider {
       display: flex;
       align-items: center;
       gap: 6px;
       margin: 12px 0 8px;
     }
-    
+
     .divider-line { flex: 1; border-top: 1px solid #c9a87c; }
-    
+
     .divider-title {
       font-family: 'Cinzel', serif;
       font-size: 9px;
@@ -142,7 +142,7 @@
       text-transform: uppercase;
       white-space: nowrap;
     }
-    
+
     .skill-item {
       display: flex;
       align-items: center;
@@ -151,7 +151,7 @@
       cursor: pointer;
       font-size: 13px;
     }
-    
+
     .skill-item .dot {
       width: 10px;
       height: 10px;
@@ -160,9 +160,9 @@
       margin-right: 6px;
       flex-shrink: 0;
     }
-    
+
     .skill-item .dot.checked { background: #8b5a2b; }
-    
+
     .skill-name { flex: 1; }
     .skill-attr { font-size: 10px; color: #8b5a2b; margin: 0 6px; }
     .skill-bonus { font-weight: bold; color: #5c3a1e; min-width: 30px; text-align: right; }
@@ -185,14 +185,14 @@
       margin-top: 6px;
     }
     .checkbox-field input { width: 16px; height: 16px; }
-    
+
     .display-value {
       border: 1px solid #8b5a2b;
       background: #f0e8d5;
       padding: 4px 6px;
       text-align: center;
     }
-    
+
     .display-value input {
       background: transparent;
       border: none;
@@ -202,13 +202,13 @@
       color: #8b5a2b;
       text-align: center;
     }
-    
+
     .display-value-label {
       font-family: 'Cinzel', serif;
       font-size: 8px;
       color: #8b5a2b;
     }
-    
+
     .weight-field { position: relative; width: 100%; }
     .weight-field input { padding-right: 18px; }
     .weight-field::after {
@@ -269,6 +269,17 @@
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
+    }
+
+    .notes-box textarea {
+      min-height: 180px;
+      resize: vertical;
+    }
+
+    .spell-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
     }
   </style>
 </head>
@@ -476,6 +487,8 @@
           <textarea id="bindungen" onchange="save()"></textarea>
           <label>Makel</label>
           <textarea id="makel" onchange="save()"></textarea>
+          <label>Notizen</label>
+          <textarea id="notizen" onchange="save()" style="min-height: 180px;"></textarea>
         </div>
       </div>
     </div>
@@ -542,8 +555,19 @@
           <input id="aussehenBild" type="hidden">
         </div>
         <div class="box textarea-field">
-          <label>Hintergrundgeschichte</label>
+          <div class="field-header">
+            <label>Karte</label>
+            <div class="field-actions">
+              <button type="button" class="mini-button" onclick="document.getElementById('karteBildFile').click()">Bild importieren</button>
+              <button type="button" class="mini-button" id="karteBildRemove" onclick="clearKarteBild()" disabled>Bild entfernen</button>
+            </div>
+          </div>
           <textarea id="hintergrundgeschichte" onchange="save()" style="min-height: 120px;"></textarea>
+          <div id="karteBildPreview" class="image-preview" style="margin-top: 12px;">
+            <span>Keine Karte</span>
+          </div>
+          <input id="karteBildFile" type="file" accept="image/*" onchange="importKarteBild(event)" style="display: none;">
+          <input id="karteBild" type="hidden">
         </div>
       </div>
     </div>
@@ -571,7 +595,7 @@
         </div>
       </div>
 
-      <div class="grid3">
+      <div class="spell-grid">
         <div class="box">
           <label style="margin-bottom: 8px; font-size: 11px;">ZAUBERTRICKS (0)</label>
           <div id="zaubertricks-list"></div>
@@ -583,6 +607,22 @@
         <div class="box">
           <label style="margin-bottom: 8px; font-size: 11px;">STUFE 2</label>
           <div id="zauber2-list"></div>
+        </div>
+        <div class="box">
+          <label style="margin-bottom: 8px; font-size: 11px;">STUFE 3</label>
+          <div id="zauber3-list"></div>
+        </div>
+        <div class="box">
+          <label style="margin-bottom: 8px; font-size: 11px;">STUFE 4</label>
+          <div id="zauber4-list"></div>
+        </div>
+        <div class="box">
+          <label style="margin-bottom: 8px; font-size: 11px;">STUFE 5</label>
+          <div id="zauber5-list"></div>
+        </div>
+        <div class="box" style="grid-column: 1 / -1;">
+          <label style="margin-bottom: 8px; font-size: 11px;">STUFE 6</label>
+          <div id="zauber6-list"></div>
         </div>
       </div>
     </div>
@@ -606,7 +646,11 @@
           <div class="divider-line"></div>
         </div>
 
-        <div class="grid3">
+        <div class="grid4">
+          <div style="text-align: center;">
+            <label>PP</label>
+            <input type="number" id="währung-pp" min="0" value="0" onchange="save()" style="text-align: center;">
+          </div>
           <div style="text-align: center;">
             <label>GM</label>
             <input type="number" id="währung-gm" min="0" value="0" onchange="save()" style="text-align: center;">
@@ -722,7 +766,7 @@
               await loadPdfLibFrom(src);
               if (window.PDFLib) return;
             } catch (err) {
-              // Try next CDN
+              // next CDN
             }
           }
           throw new Error('PDF-Lib konnte nicht geladen werden.');
@@ -732,7 +776,6 @@
     }
 
     function init() {
-      // Navigation
       const nav = document.getElementById('nav');
       for (let i = 1; i <= 4; i++) {
         const btn = document.createElement('button');
@@ -742,7 +785,6 @@
         nav.appendChild(btn);
       }
 
-      // Fertigkeiten
       const skillList = document.getElementById('fertigkeiten-list');
       fertigkeiten.forEach(s => {
         const div = document.createElement('div');
@@ -752,7 +794,6 @@
         skillList.appendChild(div);
       });
 
-      // Zaubertricks
       for (let i = 0; i < 10; i++) {
         const div = document.createElement('div');
         div.style.marginBottom = '4px';
@@ -764,10 +805,10 @@
         document.getElementById('zaubertricks-list').appendChild(div);
       }
 
-      // Zauber
-      [1, 2].forEach(lvl => {
+      [1, 2, 3, 4, 5, 6].forEach(lvl => {
         const list = document.getElementById(`zauber${lvl}-list`);
-        for (let i = 0; i < 12; i++) {
+        const count = lvl === 1 || lvl === 2 || lvl === 3 || lvl === 4 || lvl === 5 ? 12 : 12;
+        for (let i = 0; i < count; i++) {
           const div = document.createElement('div');
           div.style.marginBottom = '4px';
           const input = document.createElement('input');
@@ -779,7 +820,6 @@
         }
       });
 
-      // Inventar
       const invList = document.getElementById('inventar-list');
       for (let i = 0; i < 18; i++) {
         const tr = document.createElement('tr');
@@ -827,10 +867,15 @@
         skillProfs = normalizeSkillProfs(data.skillProfs);
       }
       setAussehenBild('');
+      setKarteBild('');
       Object.keys(data).forEach(key => {
         if (key === 'skillProfs') return;
         if (key === 'aussehenBild') {
           setAussehenBild(data[key]);
+          return;
+        }
+        if (key === 'karteBild') {
+          setKarteBild(data[key]);
           return;
         }
         const el = document.getElementById(key);
@@ -879,17 +924,38 @@
       }
     }
 
+    function setKarteBild(dataUrl) {
+      const hidden = document.getElementById('karteBild');
+      const preview = document.getElementById('karteBildPreview');
+      const removeBtn = document.getElementById('karteBildRemove');
+      if (hidden) hidden.value = dataUrl || '';
+      if (!preview) return;
+      preview.innerHTML = '';
+      if (dataUrl) {
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = 'Karte Bild';
+        preview.appendChild(img);
+        if (removeBtn) removeBtn.disabled = false;
+      } else {
+        const span = document.createElement('span');
+        span.textContent = 'Keine Karte';
+        preview.appendChild(span);
+        if (removeBtn) removeBtn.disabled = true;
+      }
+    }
+
     function importAussehenBild(event) {
       const file = event.target.files[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) {
-        alert('Bitte eine Bilddatei auswaehlen.');
+        alert('Bitte eine Bilddatei auswählen.');
         event.target.value = '';
         return;
       }
       const maxBytes = 2 * 1024 * 1024;
       if (file.size > maxBytes) {
-        alert('Bild ist zu gross (max 2 MB).');
+        alert('Bild ist zu groß (max 2 MB).');
         event.target.value = '';
         return;
       }
@@ -902,9 +968,39 @@
       event.target.value = '';
     }
 
+    function importKarteBild(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Bitte eine Bilddatei auswählen.');
+        event.target.value = '';
+        return;
+      }
+      const maxBytes = 2 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        alert('Bild ist zu groß (max 2 MB).');
+        event.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setKarteBild(e.target.result);
+        save();
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
     function clearAussehenBild() {
       setAussehenBild('');
       const fileInput = document.getElementById('aussehenBildFile');
+      if (fileInput) fileInput.value = '';
+      save();
+    }
+
+    function clearKarteBild() {
+      setKarteBild('');
+      const fileInput = document.getElementById('karteBildFile');
       if (fileInput) fileInput.value = '';
       save();
     }
@@ -950,7 +1046,6 @@
       const percBonus = percProf === 2 ? getProf(lvl) * 2 : percProf === 1 ? getProf(lvl) : 0;
       document.getElementById('passive-perc').textContent = 10 + weiMod + percBonus;
 
-      // Update Fertigkeiten UI
       fertigkeiten.forEach(s => {
         const attrKey = s.attr;
         const profLevel = skillProfs[s.name] || 0;
@@ -1033,6 +1128,21 @@
       const base64 = text.substring(start + startMarker.length, end).trim();
       if (!base64) return null;
       return fromBase64Utf8(base64);
+    }
+
+    function splitDataUrl(dataUrl) {
+      const match = /^data:(image\/(png|jpeg|jpg));base64,(.+)$/i.exec(dataUrl || '');
+      if (!match) return null;
+      const mime = match[1].toLowerCase() === 'image/jpg' ? 'image/jpeg' : match[1].toLowerCase();
+      return { mime, base64: match[3] };
+    }
+
+    async function addImageToPdf(pdfDoc, dataUrl) {
+      const info = splitDataUrl(dataUrl);
+      if (!info) return null;
+      const bytes = Uint8Array.from(atob(info.base64), c => c.charCodeAt(0));
+      if (info.mime === 'image/png') return await pdfDoc.embedPng(bytes);
+      return await pdfDoc.embedJpg(bytes);
     }
 
     async function exportPDF() {
@@ -1291,6 +1401,30 @@
       const textW = (contentW - gap) / 2;
       drawBox(p2, margin, y, textW, 120, 'Aussehen', data['aussehen'], { valueSize: 9 });
       drawBox(p2, margin + textW + gap, y, textW, 120, 'Hintergrundgeschichte', data['hintergrundgeschichte'], { valueSize: 9 });
+      const appearanceImage = await addImageToPdf(pdfDoc, data['aussehenBild']);
+      if (appearanceImage) {
+        const maxW = textW - 12;
+        const maxH = 110;
+        const scale = Math.min(maxW / appearanceImage.width, maxH / appearanceImage.height);
+        p2.drawImage(appearanceImage, {
+          x: margin + 6,
+          y: yFromTop(p2, y + 6) - appearanceImage.height * scale,
+          width: appearanceImage.width * scale,
+          height: appearanceImage.height * scale
+        });
+      }
+      const mapImage = await addImageToPdf(pdfDoc, data['karteBild']);
+      if (mapImage) {
+        const maxW = textW - 12;
+        const maxH = 110;
+        const scale = Math.min(maxW / mapImage.width, maxH / mapImage.height);
+        p2.drawImage(mapImage, {
+          x: margin + textW + gap + 6,
+          y: yFromTop(p2, y + 6) - mapImage.height * scale,
+          width: mapImage.width * scale,
+          height: mapImage.height * scale
+        });
+      }
 
       y += 136;
       drawSectionTitle(p2, 'Persoenlichkeit', y);
@@ -1300,6 +1434,8 @@
       y += 106;
       drawBox(p2, margin, y, textW, 90, 'Bindungen', data['bindungen'], { valueSize: 9 });
       drawBox(p2, margin + textW + gap, y, textW, 90, 'Makel', data['makel'], { valueSize: 9 });
+      y += 106;
+      drawBox(p2, margin, y, pageSize[0] - margin * 2, 70, 'Notizen', data['notizen'], { valueSize: 9 });
 
       const p3 = pdfDoc.addPage(pageSize);
       drawPageFrame(p3, 'Zauber', 3);
@@ -1331,6 +1467,29 @@
       drawSpellList('Zaubertricks (0)', 'zauber-trick-', 10, margin);
       drawSpellList('Stufe 1', 'zauber-1-', 12, margin + spellW + gap);
       drawSpellList('Stufe 2', 'zauber-2-', 12, margin + (spellW + gap) * 2);
+      // Extra spell levels added for the sheet and PDF
+      const p3b = pdfDoc.addPage(pageSize);
+      drawPageFrame(p3b, 'Zauber - Stufe 3 bis 6', 3);
+      y = 56;
+      drawSectionTitle(p3b, 'Zauberlisten', y);
+      y += 16;
+      const spellW2 = (contentW - gap) / 2;
+      const drawSpellList2 = (title, startId, count, x, yTop) => {
+        const h = 250;
+        p3b.drawRectangle({ x, y: yFromTop(p3b, yTop) - h, width: spellW2, height: h, borderColor: colors.border, borderWidth: 1, color: colors.panel });
+        drawTextTop(p3b, title, x + 6, yTop + 4, 9, fontBold, colors.accent);
+        const lineSize = 9;
+        const lineHeight = 12;
+        for (let i = 0; i < count; i++) {
+          const key = `${startId}${i}`;
+          const val = data[key] || '';
+          drawTextTop(p3b, val || '-', x + 6, yTop + 20 + i * lineHeight, lineSize, font, colors.ink);
+        }
+      };
+      drawSpellList2('Stufe 3', 'zauber-3-', 12, margin, y);
+      drawSpellList2('Stufe 4', 'zauber-4-', 12, margin + spellW2 + gap, y);
+      drawSpellList2('Stufe 5', 'zauber-5-', 12, margin, y + 260);
+      drawSpellList2('Stufe 6', 'zauber-6-', 12, margin + spellW2 + gap, y + 260);
 
       const p4 = pdfDoc.addPage(pageSize);
       drawPageFrame(p4, 'Inventar', 4);
@@ -1356,10 +1515,11 @@
       y += tableH + 24;
       drawSectionTitle(p4, 'Waehrung', y);
       y += 16;
-      const coinW = (contentW - gap * 2) / 3;
-      drawBox(p4, margin, y, coinW, 32, 'GM', data['währung-gm']);
-      drawBox(p4, margin + coinW + gap, y, coinW, 32, 'SM', data['währung-sm']);
-      drawBox(p4, margin + (coinW + gap) * 2, y, coinW, 32, 'KM', data['währung-km']);
+      const coinW = (contentW - gap * 3) / 4;
+      drawBox(p4, margin, y, coinW, 32, 'PP', data['währung-pp']);
+      drawBox(p4, margin + coinW + gap, y, coinW, 32, 'GM', data['währung-gm']);
+      drawBox(p4, margin + (coinW + gap) * 2, y, coinW, 32, 'SM', data['währung-sm']);
+      drawBox(p4, margin + (coinW + gap) * 3, y, coinW, 32, 'KM', data['währung-km']);
 
         const pdfBytes = await pdfDoc.save();
         const pdfWithData = embedJsonInPdf(pdfBytes, json);
