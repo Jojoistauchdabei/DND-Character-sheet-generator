@@ -600,7 +600,7 @@
           <div id="aussehenBildPreview" class="image-preview">
             <span>Kein Bild</span>
           </div>
-          <input id="aussehenBildFile" type="file" accept="image/*" onchange="importAussehenBild(event)" style="display: none;">
+          <input id="aussehenBildFile" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onchange="importAussehenBild(event)" style="display: none;">
           <input id="aussehenBild" type="hidden">
         </div>
         <div class="box textarea-field">
@@ -615,7 +615,7 @@
           <div id="karteBildPreview" class="image-preview" style="margin-top: 12px;">
             <span>Keine Karte</span>
           </div>
-          <input id="karteBildFile" type="file" accept="image/*" onchange="importKarteBild(event)" style="display: none;">
+          <input id="karteBildFile" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onchange="importKarteBild(event)" style="display: none;">
           <input id="karteBild" type="hidden">
         </div>
       </div>
@@ -737,6 +737,17 @@
 
     const attrMap = { STR:"stärke", GES:"geschicklichkeit", KON:"konstitution", INT:"intelligenz", WEI:"weisheit", CHA:"charisma" };
 
+    const attrAliases = {
+      STR: 'STR', GES: 'GES', KON: 'KON', INT: 'INT', WEI: 'WEI', CHA: 'CHA',
+      STÄRKE: 'STR', STAERKE: 'STR', GESCHICKLICHKEIT: 'GES', KONSTITUTION: 'KON',
+      INTELLIGENZ: 'INT', WEISHEIT: 'WEI', CHARISMA: 'CHA'
+    };
+    function resolveAttrKey(value) {
+      const raw = String(value || '').trim().toUpperCase()
+        .replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE');
+      return attrAliases[raw] || null;
+    }
+
     const baseAc = 10;
     const armorData = {
       "Keine": { bonus: 0, dexCap: null },
@@ -776,6 +787,7 @@
     const getMod = (v) => Math.floor((v - 10) / 2);
     const getProf = (lvl) => 2 + Math.floor((lvl - 1) / 4);
     const fmtMod = (v) => v >= 0 ? `+${v}` : `${v}`;
+    const safeFilename = (name) => String(name || '').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'charakter';
 
     const pdfLibSources = [
       'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js',
@@ -885,8 +897,35 @@
         invList.appendChild(tr);
       }
 
+      attachDatalist('klasse', klassen);
+      attachDatalist('volk', völker);
+      attachDatalist('hintergrund', hintergründe);
+      attachDatalist('zaubattr', ['STR', 'GES', 'KON', 'INT', 'WEI', 'CHA']);
+
+      document.addEventListener('input', (e) => {
+        const el = e.target;
+        if (!el || !el.id || el.id === 'importFile' || el.id === 'importPdfFile') return;
+        if (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number'))) {
+          save();
+        }
+      });
+
       load();
       updateCalcs();
+    }
+
+    function attachDatalist(inputId, values) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const dl = document.createElement('datalist');
+      dl.id = inputId + '-optionen';
+      values.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        dl.appendChild(opt);
+      });
+      document.body.appendChild(dl);
+      input.setAttribute('list', dl.id);
     }
 
     function showPage(n) {
@@ -908,6 +947,7 @@
         }
       });
       data.skillProfs = skillProfs;
+      data.inspiration = document.getElementById('inspiration-box').classList.contains('active');
       return data;
     }
 
@@ -937,19 +977,38 @@
           }
         }
       });
+      if (data.inspiration !== undefined && data.inspiration !== null) {
+        const v = data.inspiration;
+        document.getElementById('inspiration-box').classList.toggle('active', v === true || v === 'true' || v === 1 || v === '1');
+      }
     }
 
+    let saveWarned = false;
+
     function save() {
-      const data = collectData();
-      localStorage.setItem('dndChar', JSON.stringify(data));
+      try {
+        localStorage.setItem('dndChar', JSON.stringify(collectData()));
+        saveWarned = false;
+      } catch (err) {
+        console.error('Speichern fehlgeschlagen:', err);
+        if (!saveWarned) {
+          saveWarned = true;
+          alert('Speichern fehlgeschlagen (' + err.name + '). Der Browser-Speicher ist voll – vermutlich zu große Bilder.');
+        }
+      }
     }
 
     function load() {
-      const saved = localStorage.getItem('dndChar');
-      if (saved) {
-        const data = JSON.parse(saved);
-        applyData(data);
+      let data;
+      try {
+        const saved = localStorage.getItem('dndChar');
+        if (!saved) return;
+        data = JSON.parse(saved);
+      } catch (err) {
+        console.warn('Gespeicherte Charakterdaten sind beschädigt und werden ignoriert:', err);
+        return;
       }
+      applyData(data);
     }
 
     function setAussehenBild(dataUrl) {
@@ -997,8 +1056,8 @@
     function importAussehenBild(event) {
       const file = event.target.files[0];
       if (!file) return;
-      if (!file.type.startsWith('image/')) {
-        alert('Bitte eine Bilddatei auswählen.');
+      if (!/^image\/(png|jpe?g)$/i.test(file.type)) {
+        alert('Bitte eine PNG- oder JPG-Datei verwenden – andere Formate (z.B. WebP) können nicht ins PDF exportiert werden.');
         event.target.value = '';
         return;
       }
@@ -1020,8 +1079,8 @@
     function importKarteBild(event) {
       const file = event.target.files[0];
       if (!file) return;
-      if (!file.type.startsWith('image/')) {
-        alert('Bitte eine Bilddatei auswählen.');
+      if (!/^image\/(png|jpe?g)$/i.test(file.type)) {
+        alert('Bitte eine PNG- oder JPG-Datei verwenden – andere Formate (z.B. WebP) können nicht ins PDF exportiert werden.');
         event.target.value = '';
         return;
       }
@@ -1086,8 +1145,8 @@
       const acAuto = baseAc + armor.bonus + dexAdd + shieldBonus + acBonus;
       document.getElementById('ac-auto').value = acAuto;
 
-      const zaubAttr = document.getElementById('zaubattr').value;
-      const zaubMod = zaubAttr && attrs[zaubAttr] ? getMod(attrs[zaubAttr]) : 0;
+      const zaubAttrKey = resolveAttrKey(document.getElementById('zaubattr').value);
+      const zaubMod = zaubAttrKey ? getMod(attrs[zaubAttrKey]) : 0;
       document.getElementById('auto-zaubsg').value = (8 + getProf(lvl) + zaubMod);
 
       const weiMod = getMod(attrs.WEI);
@@ -1137,8 +1196,11 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = (document.getElementById('charaktername').value || 'charakter') + '.json';
+      a.download = safeFilename(document.getElementById('charaktername').value) + '.json';
+      document.body.appendChild(a);
       a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function toBase64Utf8(text) {
@@ -1233,12 +1295,17 @@
         return size;
       };
 
+      // WinAnsi (CP1252) ist die einzige Kodierung der Standard-PDF-Fonts.
+      // Alles andere (z.B. Emojis) würde drawText zum Absturz bringen – daher entfernen wir es.
+      const winAnsiSafeRe = /[^\u0020-\u007E\n\u00A0-\u00FF\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178]/g;
+      const sanitizeWinAnsi = (v) => String(v == null ? '' : v).replace(winAnsiSafeRe, '');
+
       const drawTextTop = (page, text, x, yTop, size, usedFont, color) => {
         const offset = getFontTopOffset(usedFont, size);
-        page.drawText(text, { x, y: yFromTop(page, yTop) - offset, size, font: usedFont, color });
+        page.drawText(sanitizeWinAnsi(text), { x, y: yFromTop(page, yTop) - offset, size, font: usedFont, color });
       };
 
-      const safeText = (v) => (v == null || v === '' ? '-' : String(v));
+      const safeText = (v) => (v == null || v === '' ? '-' : sanitizeWinAnsi(String(v)));
 
       const wrapText = (text, maxWidth, size, usedFont) => {
         const lines = [];
@@ -1264,7 +1331,7 @@
       };
 
       const fitText = (text, maxWidth, size, usedFont) => {
-        let out = String(text || '');
+        let out = sanitizeWinAnsi(String(text || ''));
         if (usedFont.widthOfTextAtSize(out, size) <= maxWidth) return out;
         while (out.length > 0 && usedFont.widthOfTextAtSize(out + '...', size) > maxWidth) {
           out = out.slice(0, -1);
@@ -1311,7 +1378,7 @@
         page.drawRectangle({ x: margin - 10, y: margin - 10, width: contentW + 20, height: pageSize[1] - (margin - 10) * 2, borderColor: colors.border, borderWidth: 1 });
         page.drawRectangle({ x: margin - 5, y: margin - 5, width: contentW + 10, height: pageSize[1] - (margin - 5) * 2, borderColor: colors.accent, borderWidth: 1 });
         drawTextTop(page, title, margin, 24, 12, fontBold, colors.accent);
-        drawTextTop(page, `Seite ${pageNum}/4`, pageSize[0] - margin - 60, 24, 9, fontBold, colors.accent);
+        drawTextTop(page, `Seite ${pageNum}/5`, pageSize[0] - margin - 60, 24, 9, fontBold, colors.accent);
       };
 
       const attrs = {
@@ -1494,7 +1561,8 @@
       drawBox(p3, margin, y, zW, 32, 'Zauberklasse', data['zaubklasse']);
       drawBox(p3, margin + zW + gap, y, zW, 32, 'Attribut', data['zaubattr']);
       drawBox(p3, margin + (zW + gap) * 2, y, zW, 32, 'Zauber-SG', data['zaubsg']);
-      drawBox(p3, margin + (zW + gap) * 3, y, zW, 32, 'Auto-SG', 8 + prof + (mods[data['zaubattr']] || 0));
+      const zaubKey = resolveAttrKey(data['zaubattr']);
+      drawBox(p3, margin + (zW + gap) * 3, y, zW, 32, 'Auto-SG', 8 + prof + (zaubKey ? mods[zaubKey] : 0));
 
       y += 48;
       drawSectionTitle(p3, 'Zauberlisten', y);
@@ -1509,7 +1577,7 @@
         for (let i = 0; i < count; i++) {
           const key = `${startId}${i}`;
           const val = data[key] || '';
-          drawTextTop(p3, val || '-', x + 6, y + 20 + i * lineHeight, lineSize, font, colors.ink);
+          drawTextTop(p3, fitText(val, spellW - 12, lineSize, font) || '-', x + 6, y + 20 + i * lineHeight, lineSize, font, colors.ink);
         }
       };
       drawSpellList('Zaubertricks (0)', 'zauber-trick-', 10, margin);
@@ -1517,7 +1585,7 @@
       drawSpellList('Stufe 2', 'zauber-2-', 12, margin + (spellW + gap) * 2);
       // Extra spell levels added for the sheet and PDF
       const p3b = pdfDoc.addPage(pageSize);
-      drawPageFrame(p3b, 'Zauber - Stufe 3 bis 6', 3);
+      drawPageFrame(p3b, 'Zauber - Stufe 3 bis 6', 4);
       y = 56;
       drawSectionTitle(p3b, 'Zauberlisten', y);
       y += 16;
@@ -1531,7 +1599,7 @@
         for (let i = 0; i < count; i++) {
           const key = `${startId}${i}`;
           const val = data[key] || '';
-          drawTextTop(p3b, val || '-', x + 6, yTop + 20 + i * lineHeight, lineSize, font, colors.ink);
+          drawTextTop(p3b, fitText(val, spellW2 - 12, lineSize, font) || '-', x + 6, yTop + 20 + i * lineHeight, lineSize, font, colors.ink);
         }
       };
       drawSpellList2('Stufe 3', 'zauber-3-', 12, margin, y);
@@ -1540,7 +1608,7 @@
       drawSpellList2('Stufe 6', 'zauber-6-', 12, margin + spellW2 + gap, y + 260);
 
       const p4 = pdfDoc.addPage(pageSize);
-      drawPageFrame(p4, 'Inventar', 4);
+      drawPageFrame(p4, 'Inventar', 5);
       y = 56;
       drawSectionTitle(p4, 'Inventar', y);
       y += 16;
@@ -1555,7 +1623,7 @@
         const name = data[`inv-name-${i}`] || '';
         const anz = data[`inv-anz-${i}`] || '';
         const gew = data[`inv-gew-${i}`] || '';
-        drawTextTop(p4, name || '-', margin + 6, rowY, 9, font, colors.ink);
+        drawTextTop(p4, fitText(name, contentW - 150, 9, font) || '-', margin + 6, rowY, 9, font, colors.ink);
         drawTextTop(p4, String(anz || '-'), margin + contentW - 115, rowY, 9, font, colors.ink);
         drawTextTop(p4, String(gew || '-'), margin + contentW - 60, rowY, 9, font, colors.ink);
       }
@@ -1575,7 +1643,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = (data.charaktername || 'charakter') + '.pdf';
+        a.download = safeFilename(data.charaktername) + '.pdf';
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -1594,6 +1662,7 @@
         const json = extractJsonFromPdf(buffer);
         if (!json) throw new Error('Keine eingebetteten JSON-Daten gefunden.');
         const data = JSON.parse(json);
+        if (localStorage.getItem('dndChar') && !window.confirm('Ein gespeicherter Charakter existiert bereits und wird überschrieben. Fortfahren?')) return;
         applyData(data);
         updateCalcs();
         alert('✓ PDF erfolgreich importiert!');
@@ -1611,6 +1680,7 @@
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target.result);
+          if (localStorage.getItem('dndChar') && !window.confirm('Ein gespeicherter Charakter existiert bereits und wird überschrieben. Fortfahren?')) return;
           applyData(data);
           updateCalcs();
           alert('✓ Charakter erfolgreich importiert!');
