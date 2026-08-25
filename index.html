@@ -381,7 +381,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 25.08.2026-2</span>
+        <span class="version-tag">BUILD 25.08.2026-3</span>
       </div>
     </div>
 
@@ -1070,6 +1070,7 @@
           try { data = JSON.parse(readSlotRaw(active)); } catch (e) { data = null; }
           setSlotIndex([{ id: active, name: String((data && data.charaktername) || '') }]);
         }
+        localStorage.removeItem('dndChar');
         return;
       }
       const idx = getSlotIndex();
@@ -1178,19 +1179,65 @@
       document.getElementById('inspiration-box').classList.remove('active');
     }
 
+    function shrinkDataImages(data) {
+      return new Promise(resolve => {
+        const keys = ['aussehenBild', 'karteBild'].filter(k => typeof data[k] === 'string' && data[k].startsWith('data:image'));
+        if (!keys.length) { resolve(false); return; }
+        Promise.all(keys.map(k => compressDataUrl(data[k], 1000, 0.8).then(nd => {
+          if (nd && nd.length < data[k].length) { data[k] = nd; return true; }
+          return false;
+        }))).then(results => resolve(results.some(Boolean)));
+      });
+    }
+
+    async function freeSpaceFromOtherSlots(activeId) {
+      const idx = getSlotIndex();
+      for (const s of idx) {
+        if (s.id === activeId) continue;
+        const raw = readSlotRaw(s.id);
+        if (!raw || !raw.includes('data:image')) continue;
+        let d;
+        try { d = JSON.parse(raw); } catch (e) { continue; }
+        await shrinkDataImages(d);
+        try { writeSlot(s.id, d); } catch (e) { /* weiter mit nächstem Slot */ }
+      }
+    }
+
+    function finalSaveFailureAlert(err) {
+      console.error('Speichern fehlgeschlagen:', err);
+      if (!saveWarned) {
+        saveWarned = true;
+        alert('Speichern fehlgeschlagen (' + err.name + '). Der Browser-Speicher ist voll oder gesperrt. Bitte alle Charaktere als JSON/PDF exportieren, alte Charaktere löschen und den Browser-Cache für diese Seite leeren.');
+      }
+    }
+
+    async function recoverAndRetrySave(id, data, err) {
+      console.warn('Speichern fehlgeschlagen, Starte Rettungskaskade:', err && err.name);
+      const schritt = async (versuch, meldung) => {
+        if (versuch) await versuch;
+        try {
+          writeSlot(id, data);
+          syncActiveName(data.charaktername);
+          saveWarned = false;
+          if (meldung) alert(meldung);
+          return true;
+        } catch (e) { return false; }
+      };
+      if (await schritt(shrinkDataImages(data), 'Die Bilder dieses Charakters wurden automatisch verkleinert – Speichern funktioniert wieder.')) return;
+      if (await schritt(Promise.resolve(localStorage.removeItem('dndChar')), 'Nicht mehr benötigte Alt-Daten wurden entfernt – Speichern funktioniert wieder.')) return;
+      if (await schritt(freeSpaceFromOtherSlots(id), 'Speicher wurde durch Verkleinern der Bilder anderer Charaktere freigemacht – Speichern funktioniert wieder.')) return;
+      finalSaveFailureAlert(new DOMException('QuotaExceededError', 'QuotaExceededError'));
+    }
+
     function save() {
+      const id = getActiveSlotId();
+      const data = collectData();
       try {
-        const id = getActiveSlotId();
-        const data = collectData();
         if (id) writeSlot(id, data);
         syncActiveName(data.charaktername);
         saveWarned = false;
       } catch (err) {
-        console.error('Speichern fehlgeschlagen:', err);
-        if (!saveWarned) {
-          saveWarned = true;
-          alert('Speichern fehlgeschlagen (' + err.name + '). Der Browser-Speicher ist voll oder gesperrt – Änderungen gehen beim Schließen verloren. Tipp: Charakter als JSON/PDF exportieren und große Bilder entfernen.');
-        }
+        recoverAndRetrySave(id, data, err);
       }
     }
 
