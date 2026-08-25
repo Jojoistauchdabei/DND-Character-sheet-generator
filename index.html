@@ -72,6 +72,15 @@
 
     .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 
+    .version-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      color: var(--accent-muted);
+      align-self: center;
+      padding: 0 4px;
+      letter-spacing: 1px;
+    }
+
     .slot-bar {
       display: flex;
       align-items: center;
@@ -372,6 +381,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
+        <span class="version-tag">BUILD 25.08.2026-2</span>
       </div>
     </div>
 
@@ -636,7 +646,7 @@
           <div id="aussehenBildPreview" class="image-preview">
             <span>Kein Bild</span>
           </div>
-          <input id="aussehenBildFile" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onchange="importAussehenBild(event)" style="display: none;">
+          <input id="aussehenBildFile" type="file" accept="image/*" onchange="importAussehenBild(event)" style="display: none;">
           <input id="aussehenBild" type="hidden">
         </div>
         <div class="box textarea-field">
@@ -651,7 +661,7 @@
           <div id="karteBildPreview" class="image-preview" style="margin-top: 12px;">
             <span>Keine Karte</span>
           </div>
-          <input id="karteBildFile" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onchange="importKarteBild(event)" style="display: none;">
+          <input id="karteBildFile" type="file" accept="image/*" onchange="importKarteBild(event)" style="display: none;">
           <input id="karteBild" type="hidden">
         </div>
       </div>
@@ -1106,6 +1116,7 @@
 
     function switchSlot(id) {
       if (!id || id === getActiveSlotId()) return;
+      save();
       setActiveSlotId(id);
       resetForm();
       load();
@@ -1116,6 +1127,13 @@
     function newSlot() {
       save();
       const id = newSlotId();
+      try {
+        writeSlot(id, {});
+      } catch (err) {
+        console.error('Neuer Charakter konnte nicht gespeichert werden:', err);
+        alert('Kein Speicherplatz für einen neuen Charakter. Bitte alte Charaktere löschen, Bilder entfernen oder als JSON/PDF exportieren.');
+        return;
+      }
       const idx = getSlotIndex();
       idx.push({ id: id, name: '' });
       setSlotIndex(idx);
@@ -1177,9 +1195,10 @@
     }
 
     function load() {
+      const id = getActiveSlotId();
       let data;
       try {
-        const saved = readSlotRaw(getActiveSlotId());
+        const saved = readSlotRaw(id);
         if (!saved) return;
         data = JSON.parse(saved);
       } catch (err) {
@@ -1187,6 +1206,7 @@
         return;
       }
       applyData(data);
+      shrinkLargeImagesAsync(id);
     }
 
     function setAussehenBild(dataUrl) {
@@ -1231,50 +1251,72 @@
       }
     }
 
+    function compressDataUrl(dataUrl, maxDim, quality) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(img.width * scale));
+            c.height = Math.max(1, Math.round(img.height * scale));
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            resolve(c.toDataURL('image/jpeg', quality));
+          } catch (e) { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+      });
+    }
+
+    function compressImageFile(file, maxDim, quality) {
+      return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) { reject(new Error('Bitte eine Bilddatei auswählen.')); return; }
+        if (file.size > 15 * 1024 * 1024) { reject(new Error('Bild ist zu groß (max 15 MB).')); return; }
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(compressDataUrl(e.target.result, maxDim, quality));
+        reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function shrinkLargeImagesAsync(id) {
+      const raw = readSlotRaw(id);
+      if (!raw || raw.length < 1000000) return;
+      let data;
+      try { data = JSON.parse(raw); } catch (e) { return; }
+      const jobs = [];
+      ['aussehenBild', 'karteBild'].forEach(k => {
+        if (typeof data[k] === 'string' && data[k].startsWith('data:image')) {
+          jobs.push(compressDataUrl(data[k], 1200, 0.85).then(nd => {
+            if (nd && nd.length < data[k].length) data[k] = nd;
+          }));
+        }
+      });
+      if (!jobs.length) return;
+      Promise.all(jobs).then(() => {
+        try { writeSlot(id, data); } catch (e) { console.error('Automatische Bildverkleinerung fehlgeschlagen:', e); }
+      });
+    }
+
     function importAussehenBild(event) {
       const file = event.target.files[0];
       if (!file) return;
-      if (!/^image\/(png|jpe?g)$/i.test(file.type)) {
-        alert('Bitte eine PNG- oder JPG-Datei verwenden – andere Formate (z.B. WebP) können nicht ins PDF exportiert werden.');
-        event.target.value = '';
-        return;
-      }
-      const maxBytes = 2 * 1024 * 1024;
-      if (file.size > maxBytes) {
-        alert('Bild ist zu groß (max 2 MB).');
-        event.target.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAussehenBild(e.target.result);
+      compressImageFile(file, 1200, 0.85).then(dataUrl => {
+        if (!dataUrl) throw new Error('Bild konnte nicht verarbeitet werden.');
+        setAussehenBild(dataUrl);
         save();
-      };
-      reader.readAsDataURL(file);
-      event.target.value = '';
+      }).catch(err => alert(err.message)).finally(() => { event.target.value = ''; });
     }
 
     function importKarteBild(event) {
       const file = event.target.files[0];
       if (!file) return;
-      if (!/^image\/(png|jpe?g)$/i.test(file.type)) {
-        alert('Bitte eine PNG- oder JPG-Datei verwenden – andere Formate (z.B. WebP) können nicht ins PDF exportiert werden.');
-        event.target.value = '';
-        return;
-      }
-      const maxBytes = 2 * 1024 * 1024;
-      if (file.size > maxBytes) {
-        alert('Bild ist zu groß (max 2 MB).');
-        event.target.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setKarteBild(e.target.result);
+      compressImageFile(file, 1200, 0.85).then(dataUrl => {
+        if (!dataUrl) throw new Error('Bild konnte nicht verarbeitet werden.');
+        setKarteBild(dataUrl);
         save();
-      };
-      reader.readAsDataURL(file);
-      event.target.value = '';
+      }).catch(err => alert(err.message)).finally(() => { event.target.value = ''; });
     }
 
     function clearAussehenBild() {
