@@ -381,7 +381,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 25.08.2026-4</span>
+        <span class="version-tag">BUILD 25.08.2026-5</span>
       </div>
     </div>
 
@@ -876,12 +876,12 @@
               // next CDN
             }
           }
+          pdfLibPromise = null;
           throw new Error('PDF-Lib konnte nicht geladen werden.');
         })();
       }
       return pdfLibPromise;
     }
-
     function init() {
       const nav = document.getElementById('nav');
       for (let i = 1; i <= 4; i++) {
@@ -1349,17 +1349,31 @@
       if (!raw || raw.length < 1000000) return;
       let data;
       try { data = JSON.parse(raw); } catch (e) { return; }
+      const originals = {};
       const jobs = [];
       ['aussehenBild', 'karteBild'].forEach(k => {
         if (typeof data[k] === 'string' && data[k].startsWith('data:image')) {
-          jobs.push(compressDataUrl(data[k], 1200, 0.85).then(nd => {
-            if (nd && nd.length < data[k].length) data[k] = nd;
-          }));
+          originals[k] = data[k];
+          jobs.push(compressDataUrl(data[k], 1200, 0.85).then(nd => ({ key: k, nd })));
         }
       });
       if (!jobs.length) return;
-      Promise.all(jobs).then(() => {
-        try { writeSlot(id, data); } catch (e) { console.error('Automatische Bildverkleinerung fehlgeschlagen:', e); }
+      Promise.all(jobs).then(results => {
+        // Frischen Stand lesen, damit zwischenzeitliche Eingaben nicht überschrieben werden
+        const rawNow = readSlotRaw(id);
+        if (!rawNow) return;
+        let fresh;
+        try { fresh = JSON.parse(rawNow); } catch (e) { return; }
+        let changed = false;
+        results.forEach(({ key, nd }) => {
+          if (!nd) return;
+          if (fresh[key] === originals[key] && nd.length < originals[key].length) {
+            fresh[key] = nd;
+            changed = true;
+          }
+        });
+        if (!changed) return;
+        try { writeSlot(id, fresh); } catch (e) { console.error('Automatische Bildverkleinerung fehlgeschlagen:', e); }
       });
     }
 
