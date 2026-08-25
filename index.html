@@ -381,7 +381,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 25.08.2026-3</span>
+        <span class="version-tag">BUILD 25.08.2026-4</span>
       </div>
     </div>
 
@@ -1211,21 +1211,38 @@
       }
     }
 
+    let shrinkAlertShown = false;
+
+    function syncImageInputsFrom(data) {
+      const a = document.getElementById('aussehenBild');
+      const k = document.getElementById('karteBild');
+      if (a && typeof data.aussehenBild === 'string' && a.value !== data.aussehenBild) a.value = data.aussehenBild;
+      if (k && typeof data.karteBild === 'string' && k.value !== data.karteBild) k.value = data.karteBild;
+    }
+
     async function recoverAndRetrySave(id, data, err) {
       console.warn('Speichern fehlgeschlagen, Starte Rettungskaskade:', err && err.name);
-      const schritt = async (versuch, meldung) => {
-        if (versuch) await versuch;
+      const versucheSchreiben = () => {
         try {
           writeSlot(id, data);
           syncActiveName(data.charaktername);
           saveWarned = false;
-          if (meldung) alert(meldung);
           return true;
         } catch (e) { return false; }
       };
-      if (await schritt(shrinkDataImages(data), 'Die Bilder dieses Charakters wurden automatisch verkleinert – Speichern funktioniert wieder.')) return;
-      if (await schritt(Promise.resolve(localStorage.removeItem('dndChar')), 'Nicht mehr benötigte Alt-Daten wurden entfernt – Speichern funktioniert wieder.')) return;
-      if (await schritt(freeSpaceFromOtherSlots(id), 'Speicher wurde durch Verkleinern der Bilder anderer Charaktere freigemacht – Speichern funktioniert wieder.')) return;
+      const verkleinert = await shrinkDataImages(data);
+      if (verkleinert && versucheSchreiben()) {
+        syncImageInputsFrom(data);
+        if (!shrinkAlertShown) {
+          shrinkAlertShown = true;
+          alert('Die Bilder dieses Charakters waren sehr groß und wurden einmalig automatisch verkleinert – Speichern funktioniert wieder.');
+        }
+        return;
+      }
+      localStorage.removeItem('dndChar');
+      if (versucheSchreiben()) return;
+      await freeSpaceFromOtherSlots(id);
+      if (versucheSchreiben()) return;
       finalSaveFailureAlert(new DOMException('QuotaExceededError', 'QuotaExceededError'));
     }
 
