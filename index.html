@@ -946,6 +946,15 @@
         }
       });
 
+      window.addEventListener('storage', (e) => {
+        if (e.key === SLOT_ACTIVE_KEY || e.key === null) {
+          resetForm();
+          load();
+          updateCalcs();
+          renderSlotOptions();
+        }
+      });
+
       migrateStorage();
       renderSlotOptions();
 
@@ -977,7 +986,7 @@
     function collectData() {
       const data = {};
       document.querySelectorAll('input[type="text"], input[type="number"], input[type="checkbox"], input[type="hidden"], textarea, select').forEach(el => {
-        if (el.id && el.id !== 'importFile' && el.id !== 'importPdfFile' && el.id !== 'initiative-display' && el.id !== 'auto-zaubsg' && el.id !== 'passive-perc' && el.id !== 'ac-auto') {
+        if (el.id && el.id !== 'importFile' && el.id !== 'importPdfFile' && el.id !== 'charSlots' && el.id !== 'initiative-display' && el.id !== 'auto-zaubsg' && el.id !== 'passive-perc' && el.id !== 'ac-auto') {
           if (el.type === 'checkbox') {
             data[el.id] = el.checked;
           } else {
@@ -997,7 +1006,7 @@
       setAussehenBild('');
       setKarteBild('');
       Object.keys(data).forEach(key => {
-        if (key === 'skillProfs') return;
+        if (key === 'skillProfs' || key === 'charSlots') return;
         if (key === 'aussehenBild') {
           setAussehenBild(data[key]);
           return;
@@ -1044,13 +1053,29 @@
     }
 
     function migrateStorage() {
-      if (getActiveSlotId() && readSlotRaw(getActiveSlotId()) !== null) return;
+      const active = getActiveSlotId();
+      if (active && readSlotRaw(active) !== null) {
+        if (!getSlotIndex().some(s => s.id === active)) {
+          let data = null;
+          try { data = JSON.parse(readSlotRaw(active)); } catch (e) { data = null; }
+          setSlotIndex([{ id: active, name: String((data && data.charaktername) || '') }]);
+        }
+        return;
+      }
+      const idx = getSlotIndex();
+      const intact = idx.filter(s => readSlotRaw(s.id) !== null);
+      if (intact.length > 0) {
+        setSlotIndex(intact);
+        setActiveSlotId(intact[0].id);
+        return;
+      }
       let legacy = null;
       try { legacy = JSON.parse(localStorage.getItem('dndChar') || 'null'); } catch (e) { legacy = null; }
       const id = newSlotId();
       writeSlot(id, legacy && typeof legacy === 'object' ? legacy : {});
       setSlotIndex([{ id: id, name: String((legacy && legacy.charaktername) || '') }]);
       setActiveSlotId(id);
+      localStorage.removeItem('dndChar');
     }
 
     function syncActiveName(name) {
@@ -1124,7 +1149,7 @@
 
     function resetForm() {
       document.querySelectorAll('#page1 input, #page2 input, #page3 input, #page4 input, textarea, select').forEach(el => {
-        if (el.id === 'importFile' || el.id === 'importPdfFile') return;
+        if (el.id === 'importFile' || el.id === 'importPdfFile' || el.id === 'charSlots') return;
         if (el.type === 'checkbox') el.checked = false;
         else if (el.tagName === 'SELECT') el.selectedIndex = 0;
         else el.value = '';
@@ -1146,7 +1171,7 @@
         console.error('Speichern fehlgeschlagen:', err);
         if (!saveWarned) {
           saveWarned = true;
-          alert('Speichern fehlgeschlagen (' + err.name + '). Der Browser-Speicher ist voll – vermutlich zu große Bilder.');
+          alert('Speichern fehlgeschlagen (' + err.name + '). Der Browser-Speicher ist voll oder gesperrt – Änderungen gehen beim Schließen verloren. Tipp: Charakter als JSON/PDF exportieren und große Bilder entfernen.');
         }
       }
     }
