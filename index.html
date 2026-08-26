@@ -381,7 +381,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 25.08.2026-5</span>
+        <span class="version-tag">BUILD 25.08.2026-6</span>
       </div>
     </div>
 
@@ -1246,8 +1246,18 @@
       finalSaveFailureAlert(new DOMException('QuotaExceededError', 'QuotaExceededError'));
     }
 
+    function ensureActiveSlot() {
+      let id = getActiveSlotId();
+      if (!id || readSlotRaw(id) === null) {
+        migrateStorage();
+        renderSlotOptions();
+        id = getActiveSlotId();
+      }
+      return id;
+    }
+
     function save() {
-      const id = getActiveSlotId();
+      const id = ensureActiveSlot();
       const data = collectData();
       try {
         if (id) writeSlot(id, data);
