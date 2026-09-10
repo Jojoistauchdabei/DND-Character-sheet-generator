@@ -207,7 +207,7 @@
       }, 450);
     }
     function rollAdvantage(isAdv){
-      currentDie=20; renderDiceSelect();
+      currentDie=20; renderDiceSelect(); threeSetDie(20);
       const a=1+Math.floor(Math.random()*20), b=1+Math.floor(Math.random()*20);
       const win=isAdv?Math.max(a,b):Math.min(a,b);
       if(threeDice&&threeDice.ready) threeDice.pendingResult={sides:20,value:win};
