@@ -190,14 +190,15 @@
       const sides=currentDie;
       const count=Math.max(1,Math.min(20,parseInt(document.getElementById('diceCount').value)||1));
       const mod=parseInt(document.getElementById('diceMod').value)||0;
+      const rolls=[];
+      for(let i=0;i<count;i++) rolls.push(1+Math.floor(Math.random()*sides));
+      const sum=rolls.reduce((a,b)=>a+b,0);
+      const total=sum+mod;
+      if(threeDice&&threeDice.ready) threeDice.pendingResult={sides:sides,value:rolls[0]};
       const cube=document.getElementById('diceCube');
       if(cube){ cube.classList.remove('rolling'); void cube.offsetWidth; cube.classList.add('rolling'); }
       threeRoll();
       setTimeout(()=>{
-        const rolls=[];
-        for(let i=0;i<count;i++) rolls.push(1+Math.floor(Math.random()*sides));
-        const sum=rolls.reduce((a,b)=>a+b,0);
-        const total=sum+mod;
         document.getElementById('diceResult').textContent=total;
         document.getElementById('diceLabel').textContent='W'+sides+(count>1?` x${count}`:'');
         buildDiceCube(sides, rolls[0]);
@@ -207,12 +208,13 @@
     }
     function rollAdvantage(isAdv){
       currentDie=20; renderDiceSelect();
+      const a=1+Math.floor(Math.random()*20), b=1+Math.floor(Math.random()*20);
+      const win=isAdv?Math.max(a,b):Math.min(a,b);
+      if(threeDice&&threeDice.ready) threeDice.pendingResult={sides:20,value:win};
       const cube=document.getElementById('diceCube');
       if(cube){ cube.classList.remove('rolling'); void cube.offsetWidth; cube.classList.add('rolling'); }
       threeRoll();
       setTimeout(()=>{
-        const a=1+Math.floor(Math.random()*20), b=1+Math.floor(Math.random()*20);
-        const win=isAdv?Math.max(a,b):Math.min(a,b);
         document.getElementById('diceResult').textContent=win;
         document.getElementById('diceLabel').textContent=isAdv?'Vorteil':'Nachteil';
         buildDiceCube(20, win);
@@ -271,7 +273,7 @@
       sp.scale.setScalar(scale);
       return sp;
     }
-    function addFaceNumbers(parent, geo, labels, numScale, pushOut){
+    function addFaceNumbers(parent, geo, labels, numScale, pushOut, die, sub, filterCaps){
       const T = window.THREE;
       const pos = geo.attributes.position;
       const tris = [];
@@ -294,6 +296,7 @@
       // Dreiecke mit gleicher Normale = eine Fläche (fängt auch Fünfecke des W12 ab)
       const groups = [];
       tris.forEach(t => {
+        if (filterCaps && Math.hypot(t.n.x, t.n.z) < 0.3) return; // versteckte Kegel-Böden ignorieren
         let g = null;
         for (const h of groups) { if (h.n.dot(t.n) > 0.998) { g = h; break; } }
         if (!g) { g = { n: t.n.clone(), cs: [] }; groups.push(g); }
@@ -307,34 +310,28 @@
         const sp = makeNumberSprite(String(labels[i]), numScale);
         sp.position.copy(c);
         parent.add(sp);
+        if (die) {
+          die.userData.faces = die.userData.faces || [];
+          die.userData.faces.push({ label: String(labels[i]), sub: sub, holder: parent, normal: g.n.clone() });
+        }
       });
     }
-    function threeBipyramid(T, mat, edge, s, upperLabels, lowerLabels, numScale){
+    function threeBipyramid(T, mat, edge, s, upperLabels, lowerLabels, numScale, sub, die){
       const b = new T.Group();
-      const mkCone = (flip) => {
+      const mkCone = (flip, labels, subTag) => {
         const holder = new T.Group();
         const geo = new T.ConeGeometry(1.0, 0.95, 5);
         holder.add(new T.Mesh(geo, mat));
         holder.add(new T.LineSegments(new T.EdgesGeometry(geo, 15), edge));
+        addFaceNumbers(holder, geo, labels, numScale, 1.1, die, subTag, true);
         if (flip) holder.rotation.x = Math.PI;
         return holder;
       };
-      // Seitenflächen-Mittelpunkte im Kegel-Raum (Theta startet bei +Z, 5 Segmente)
-      const placeNumbers = (holder, labels) => {
-        for (let k = 0; k < 5; k++) {
-          const mid = (k + 0.5) * Math.PI * 2 / 5;
-          const sp = makeNumberSprite(String(labels[k]), numScale);
-          sp.position.set(Math.sin(mid) * 0.62, -0.174, Math.cos(mid) * 0.62);
-          holder.add(sp);
-        }
-      };
-      const up = mkCone(false);
+      const up = mkCone(false, upperLabels, sub);
       up.position.y = 0.475;
-      placeNumbers(up, upperLabels);
-      const lo = mkCone(true);
+      const lo = mkCone(true, lowerLabels, sub);
       lo.position.y = -0.475;
       lo.rotation.y = Math.PI / 5;
-      placeNumbers(lo, lowerLabels);
       b.add(up); b.add(lo);
       b.rotation.y = Math.PI / 5;
       b.scale.setScalar(s);
@@ -349,7 +346,7 @@
         const holder = new T.Group();
         holder.add(new T.Mesh(geo, mat));
         holder.add(new T.LineSegments(new T.EdgesGeometry(geo, 15), edge));
-        addFaceNumbers(holder, geo, labels, numScale, 1.05);
+        addFaceNumbers(holder, geo, labels, numScale, 1.05, g, undefined, false);
         g.add(holder);
       };
       const seq = (a, b) => { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; };
@@ -359,17 +356,28 @@
       else if (sides === 12) addSolid(new T.DodecahedronGeometry(1.2), seq(1, 12), 0.45);
       else if (sides === 20) addSolid(new T.IcosahedronGeometry(1.25), seq(1, 20), 0.42);
       else if (sides === 100) {
-        const l = threeBipyramid(T, mat, edge, 0.78, ['00', '10', '20', '30', '40'], ['50', '60', '70', '80', '90'], 0.5);
+        const l = threeBipyramid(T, mat, edge, 0.78, ['00', '10', '20', '30', '40'], ['50', '60', '70', '80', '90'], 0.5, 'tens', g);
         l.position.x = -0.85;
-        const r = threeBipyramid(T, mat, edge, 0.78, ['0', '1', '2', '3', '4'], ['5', '6', '7', '8', '9'], 0.5);
+        const r = threeBipyramid(T, mat, edge, 0.78, ['0', '1', '2', '3', '4'], ['5', '6', '7', '8', '9'], 0.5, 'ones', g);
         r.position.x = 0.85;
         g.add(l); g.add(r);
       }
-      else g.add(threeBipyramid(T, mat, edge, 1.15, ['0', '1', '2', '3', '4'], ['5', '6', '7', '8', '9'], 0.5)); // W10
+      else g.add(threeBipyramid(T, mat, edge, 1.15, ['0', '1', '2', '3', '4'], ['5', '6', '7', '8', '9'], 0.5, undefined, g)); // W10
+      // Flächen-Normalen in Würfel-Raum auflösen (für Ergebnis-Ausrichtung)
+      g.updateMatrixWorld(true);
+      const q = new T.Quaternion();
+      (g.userData.faces || []).forEach(f => {
+        f.holder.getWorldQuaternion(q);
+        f.normal.applyQuaternion(q);
+        delete f.holder;
+      });
       return g;
     }
     function threeSetDie(sides){
       if (!threeDice || !threeDice.ready || !window.THREE) return;
+      threeDice.pendingResult = null;
+      threeDice.settle = null;
+      threeDice.held = false;
       const old = threeDice.die;
       if (old) {
         threeDice.group.remove(old);
@@ -388,10 +396,41 @@
     function threeRoll(){
       if (!threeDice || !threeDice.ready) return;
       const d = threeDice;
+      d.settle = null;
+      d.held = false;
       d.vx = (10 + Math.random() * 8) * (Math.random() < 0.5 ? -1 : 1);
       d.vy = (10 + Math.random() * 8) * (Math.random() < 0.5 ? -1 : 1);
       d.vz = (Math.random() * 6 - 3);
       d.rollT = 0;
+    }
+    function settleLabel(sides, value){
+      if (sides === 10) return value === 10 ? '0' : String(value);
+      if (sides === 100) return value >= 100 ? '00' : String(Math.floor(value / 10) * 10).padStart(2, '0');
+      return String(value);
+    }
+    function threeBeginSettle(d){
+      const T = window.THREE;
+      const pr = d.pendingResult;
+      d.pendingResult = null;
+      d.vx = d.vy = d.vz = 0;
+      let target = null;
+      const die = d.die;
+      if (pr && die && die.userData.faces) {
+        const label = settleLabel(pr.sides, pr.value);
+        const wantSub = pr.sides === 100 ? 'tens' : undefined;
+        const f = die.userData.faces.find(x => x.label === label && (wantSub === undefined || x.sub === wantSub))
+          || die.userData.faces.find(x => x.label === label);
+        if (f) {
+          const inGroup = f.normal.clone().applyQuaternion(die.quaternion);
+          const nW = inGroup.applyQuaternion(d.group.quaternion).normalize();
+          const diePos = new T.Vector3();
+          die.getWorldPosition(diePos);
+          const camDir = d.camera.position.clone().sub(diePos).normalize();
+          target = new T.Quaternion().setFromUnitVectors(nW, camDir).multiply(d.group.quaternion.clone());
+        }
+      }
+      if (target) d.settle = { t: 0, q0: d.group.quaternion.clone(), q1: target };
+      else d.held = true;
     }
     function threeTick(){
       const d = threeDice;
@@ -401,7 +440,18 @@
       const dt = Math.min(0.05, (now - d.last) / 1000 || 0.016);
       d.last = now;
       const speed = Math.hypot(d.vx, d.vy, d.vz);
-      if (speed > 0.4) {
+      if (d.settle) {
+        // Ergebnisfläche weich zur Kamera drehen (Animation davor bleibt unangetastet)
+        d.settle.t += dt / 0.6;
+        const k = 1 - Math.pow(1 - Math.min(1, d.settle.t), 3);
+        d.group.quaternion.slerpQuaternions(d.settle.q0, d.settle.q1, k);
+        d.group.position.y *= 0.9;
+        if (d.settle.t >= 1) {
+          d.group.quaternion.copy(d.settle.q1);
+          d.settle = null;
+          d.held = true;
+        }
+      } else if (speed > 3.0) {
         d.group.rotation.x += d.vx * dt;
         d.group.rotation.y += d.vy * dt;
         d.group.rotation.z += d.vz * dt;
@@ -411,7 +461,8 @@
         d.group.position.y = Math.abs(Math.sin(Math.min(1, d.rollT / 1.3) * Math.PI)) * 0.45;
       } else {
         d.vx = d.vy = d.vz = 0;
-        d.group.rotation.y += dt * 0.5;
+        if (d.pendingResult) threeBeginSettle(d);
+        else if (!d.held) d.group.rotation.y += dt * 0.5;
         d.group.position.y *= 0.9;
       }
       d.renderer.render(d.scene, d.camera);
