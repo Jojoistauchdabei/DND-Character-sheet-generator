@@ -555,7 +555,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 10.09.2026-2</span>
+        <span class="version-tag">BUILD 10.09.2026-3</span>
       </div>
     </div>
 
@@ -750,25 +750,25 @@
         <div class="box textarea-field notes-column">
           <div class="field-header">
             <label>Persönlichkeitsmerkmale</label>
-            <button type="button" class="mini-button" onclick="openTextEditor('persönlichkeit', 'Persönlichkeitsmerkmale')">✎ Editor</button>
+            <button type="button" class="mini-button" onclick="openTextEditor('persönlichkeit', 'Persönlichkeitsmerkmale')">✎ Texteditor</button>
           </div>
           <div id="persönlichkeit" class="rich-field" contenteditable="true" oninput="save()" ondblclick="openTextEditor('persönlichkeit', 'Persönlichkeitsmerkmale')"></div>
 
           <div class="field-header">
             <label>Ideale</label>
-            <button type="button" class="mini-button" onclick="openTextEditor('ideale', 'Ideale')">✎ Editor</button>
+            <button type="button" class="mini-button" onclick="openTextEditor('ideale', 'Ideale')">✎ Texteditor</button>
           </div>
           <div id="ideale" class="rich-field" contenteditable="true" oninput="save()" ondblclick="openTextEditor('ideale', 'Ideale')"></div>
 
           <div class="field-header">
             <label>Bindungen</label>
-            <button type="button" class="mini-button" onclick="openTextEditor('bindungen', 'Bindungen')">✎ Editor</button>
+            <button type="button" class="mini-button" onclick="openTextEditor('bindungen', 'Bindungen')">✎ Texteditor</button>
           </div>
           <div id="bindungen" class="rich-field" contenteditable="true" oninput="save()" ondblclick="openTextEditor('bindungen', 'Bindungen')"></div>
 
           <div class="field-header">
             <label>Makel</label>
-            <button type="button" class="mini-button" onclick="openTextEditor('makel', 'Makel')">✎ Editor</button>
+            <button type="button" class="mini-button" onclick="openTextEditor('makel', 'Makel')">✎ Texteditor</button>
           </div>
           <div id="makel" class="rich-field" contenteditable="true" oninput="save()" ondblclick="openTextEditor('makel', 'Makel')"></div>
 
