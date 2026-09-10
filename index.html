@@ -323,8 +323,31 @@
     .mini-button:hover { background: var(--mini-button-hover-bg); }
     .mini-button:disabled { opacity: 0.6; cursor: not-allowed; }
 
+    #page1 .grid6 {
+      margin-bottom: 15px;
+    }
+
+    .notes-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notes-column textarea:not(#notizen) {
+      margin-bottom: 12px;
+    }
+
+    .notes-column #notizen {
+      flex: 1;
+      min-height: 415px;
+      resize: vertical;
+    }
+
+    .spell-grid .box {
+      margin-bottom: 0;
+    }
+
     .image-preview {
-      margin-top: 8px;
+      margin-top: 12px;
       height: 160px;
       border: 1px dashed var(--border);
       background: var(--surface-strong);
@@ -381,7 +404,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 25.08.2026-6</span>
+        <span class="version-tag">BUILD 10.09.2026-1</span>
       </div>
     </div>
 
@@ -489,7 +512,7 @@
             <div class="divider-line"></div>
           </div>
 
-          <div class="grid4" style="margin-bottom: 10px;">
+          <div class="grid4" style="margin-bottom: 12px;">
             <div class="display-value">
               <input type="text" id="ac-auto" disabled value="10">
               <div class="display-value-label">Rüstungsklasse Auto</div>
@@ -546,7 +569,7 @@
             </div>
           </div>
 
-          <div class="grid3">
+          <div class="grid3" style="margin-bottom: 12px;">
             <div>
               <label>TP Maximum</label>
               <input type="number" id="tpmax" min="0" value="0" onchange="save()">
@@ -566,14 +589,14 @@
             <div class="divider-title">Fertigkeiten</div>
             <div class="divider-line"></div>
           </div>
-          <div id="fertigkeiten-list" style="max-height: 250px; overflow-y: auto;"></div>
+          <div id="fertigkeiten-list"></div>
 
           <div style="margin-top: 12px; background: var(--surface-strong); border: 1px solid var(--border); padding: 6px 8px; font-size: 12px; text-align: center;">
             <strong>Passive Wahrnehmung: <span id="passive-perc">10</span></strong>
           </div>
         </div>
 
-        <div class="box textarea-field">
+        <div class="box textarea-field notes-column">
           <label>Persönlichkeitsmerkmale</label>
           <textarea id="persönlichkeit" onchange="save()"></textarea>
           <label>Ideale</label>
@@ -583,7 +606,7 @@
           <label>Makel</label>
           <textarea id="makel" onchange="save()"></textarea>
           <label>Notizen</label>
-          <textarea id="notizen" onchange="save()" style="min-height: 180px;"></textarea>
+          <textarea id="notizen" onchange="save()"></textarea>
         </div>
       </div>
     </div>
@@ -658,7 +681,7 @@
             </div>
           </div>
           <textarea id="hintergrundgeschichte" onchange="save()" style="min-height: 120px;"></textarea>
-          <div id="karteBildPreview" class="image-preview" style="margin-top: 12px;">
+          <div id="karteBildPreview" class="image-preview">
             <span>Keine Karte</span>
           </div>
           <input id="karteBildFile" type="file" accept="image/*" onchange="importKarteBild(event)" style="display: none;">
