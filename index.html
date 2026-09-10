@@ -586,6 +586,8 @@
     .dice-select button.picked { background: var(--accent-dark); box-shadow: 0 0 0 2px var(--border); }
     .dice-stage { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
     .dice-scene { width: 150px; height: 150px; perspective: 600px; display: flex; align-items: center; justify-content: center; }
+    #dice3d { display: none; width: 240px; max-width: 100%; }
+    #dice3d canvas { width: 100%; height: auto; display: block; }
     .dice-cube {
       width: 110px; height: 110px; position: relative;
       display: flex; align-items: center; justify-content: center;
@@ -686,7 +688,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 10.09.2026-6</span>
+        <span class="version-tag">BUILD 10.09.2026-7</span>
       </div>
     </div>
 
@@ -694,7 +696,6 @@
       <label style="margin-bottom: 0;">Charakter</label>
       <select id="charSlots" onchange="switchSlot(this.value)"></select>
       <button type="button" onclick="newSlot()">+ Neu</button>
-      <button type="button" onclick="newSlotWithCreator()">✨ Neu mit Creator</button>
       <button type="button" onclick="deleteSlot()">Löschen</button>
       <button type="button" class="inactive" onclick="showPage('DM')">⚔ DM-Modus</button>
     </div>
@@ -1106,6 +1107,7 @@
         <div class="dm-grid">
           <div>
             <div class="dice-stage">
+              <div id="dice3d"></div>
               <div class="dice-scene"><div class="dice-cube" id="diceCube"></div></div>
               <div><div class="dice-result-big" id="diceResult">20</div>
               <div style="text-align:center;font-size:12px;" id="diceLabel">W20</div></div>
@@ -1137,7 +1139,7 @@
           <button type="button" class="inactive" onclick="creatorRandom()">🎲 Zufällig</button>
           <button type="button" onclick="creatorApply()">📜 Auf Bogen übernehmen</button>
         </div>
-        <div class="checkbox-field"><input type="checkbox" id="creatorNewSlot" checked><span>Als neuen Charakter anlegen (optional bei + Neu)</span></div>
+        <div class="checkbox-field"><input type="checkbox" id="creatorNewSlot"><span>Als neuen Charakter anlegen (sonst wird der aktuelle überschrieben)</span></div>
       </div>
       <div class="box" id="dmCreatures">
         <div class="field-header"><label>🐉 Bestiarium & Health Tracker</label><span class="dm-badge">KREATUREN</span></div>
@@ -1513,9 +1515,13 @@
       }
       let legacy = null;
       try { legacy = JSON.parse(localStorage.getItem('dndChar') || 'null'); } catch (e) { legacy = null; }
-      const id = newSlotId();
+      // Keine neuen IDs stapeln: Falls Kartei-Einträge existieren (Speicher geleert),
+      // den ersten Eintrag wiederverwenden statt jedes Mal einen leeren Slot anzulegen.
+      const prevIdx = getSlotIndex();
+      const id = prevIdx.length > 0 ? prevIdx[0].id : newSlotId();
       writeSlot(id, legacy && typeof legacy === 'object' ? legacy : {});
-      setSlotIndex([{ id: id, name: String((legacy && legacy.charaktername) || '') }]);
+      if (!prevIdx.some(s => s.id === id)) prevIdx.push({ id: id, name: String((legacy && legacy.charaktername) || '') });
+      setSlotIndex(prevIdx);
       setActiveSlotId(id);
       localStorage.removeItem('dndChar');
     }
@@ -2675,7 +2681,7 @@
         b.textContent=`${DICE_GLYPH[d]||''} W${d}`;
         if(d===currentDie) b.classList.add('picked');
         else b.classList.add('inactive');
-        b.onclick=()=>{ currentDie=d; document.getElementById('diceLabel').textContent='W'+d; buildDiceCube(d, null); renderDiceSelect(); };
+        b.onclick=()=>{ currentDie=d; document.getElementById('diceLabel').textContent='W'+d; buildDiceCube(d, null); threeSetDie(d); renderDiceSelect(); };
         box.appendChild(b);
       });
     }
@@ -2694,6 +2700,7 @@
       const mod=parseInt(document.getElementById('diceMod').value)||0;
       const cube=document.getElementById('diceCube');
       if(cube){ cube.classList.remove('rolling'); void cube.offsetWidth; cube.classList.add('rolling'); }
+      threeRoll();
       setTimeout(()=>{
         const rolls=[];
         for(let i=0;i<count;i++) rolls.push(1+Math.floor(Math.random()*sides));
@@ -2710,6 +2717,7 @@
       currentDie=20; renderDiceSelect();
       const cube=document.getElementById('diceCube');
       if(cube){ cube.classList.remove('rolling'); void cube.offsetWidth; cube.classList.add('rolling'); }
+      threeRoll();
       setTimeout(()=>{
         const a=1+Math.floor(Math.random()*20), b=1+Math.floor(Math.random()*20);
         const win=isAdv?Math.max(a,b):Math.min(a,b);
@@ -2720,6 +2728,152 @@
       },450);
     }
     function clearDiceLog(){ const l=document.getElementById('diceLog'); if(l) l.innerHTML='<div>Noch keine Würfe.</div>'; }
+
+    /* ---- 3D Würfel-Modelle (three.js, CSS als Offline-Fallback) ---- */
+    let threeDice = null;
+    let threeLoading = null;
+    const THREE_SOURCES = [
+      'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+      'https://unpkg.com/three@0.128.0/build/three.min.js',
+      'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'
+    ];
+    function loadThreeFrom(src){
+      return new Promise((resolve, reject) => {
+        if (window.THREE) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = src; s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('three.js CDN failed'));
+        document.head.appendChild(s);
+      });
+    }
+    function ensureThree(){
+      if (window.THREE) return Promise.resolve();
+      if (!threeLoading) {
+        threeLoading = (async () => {
+          for (const src of THREE_SOURCES) {
+            try { await loadThreeFrom(src); if (window.THREE) return; }
+            catch (e) { /* nächstes CDN */ }
+          }
+          threeLoading = null;
+          throw new Error('3D-Engine nicht ladbar');
+        })();
+      }
+      return threeLoading;
+    }
+    function threeBipyramid(T, mat, edge, s){
+      const b = new T.Group();
+      const topGeo = new T.ConeGeometry(1.0, 0.95, 5);
+      const tm = new T.Mesh(topGeo, mat); tm.position.y = 0.475;
+      const te = new T.LineSegments(new T.EdgesGeometry(topGeo, 15), edge); te.position.y = 0.475;
+      const botGeo = new T.ConeGeometry(1.0, 0.95, 5);
+      const bm = new T.Mesh(botGeo, mat); bm.rotation.x = Math.PI; bm.position.y = -0.475;
+      const be = new T.LineSegments(new T.EdgesGeometry(botGeo, 15), edge);
+      be.rotation.x = Math.PI; be.rotation.y = Math.PI / 5; be.position.y = -0.475;
+      b.add(tm); b.add(te); b.add(bm); b.add(be);
+      b.rotation.y = Math.PI / 5;
+      b.scale.setScalar(s);
+      return b;
+    }
+    function threeDieGroup(sides){
+      const T = window.THREE;
+      const g = new T.Group();
+      const mat = new T.MeshStandardMaterial({ color: 0xead9b8, roughness: 0.5, metalness: 0.25, flatShading: true });
+      const edge = new T.LineBasicMaterial({ color: 0x8b5a2b });
+      const add = (geo) => {
+        const holder = new T.Group();
+        holder.add(new T.Mesh(geo, mat));
+        holder.add(new T.LineSegments(new T.EdgesGeometry(geo, 15), edge));
+        g.add(holder);
+      };
+      if (sides === 4) { add(new T.TetrahedronGeometry(1.55)); g.rotation.x = 0.35; }
+      else if (sides === 6) add(new T.BoxGeometry(1.5, 1.5, 1.5));
+      else if (sides === 8) add(new T.OctahedronGeometry(1.35));
+      else if (sides === 12) add(new T.DodecahedronGeometry(1.2));
+      else if (sides === 20) add(new T.IcosahedronGeometry(1.25));
+      else if (sides === 100) {
+        const l = threeBipyramid(T, mat, edge, 0.78); l.position.x = -0.85;
+        const r = threeBipyramid(T, mat, edge, 0.78); r.position.x = 0.85;
+        g.add(l); g.add(r);
+      }
+      else g.add(threeBipyramid(T, mat, edge, 1.15)); // W10
+      return g;
+    }
+    function threeSetDie(sides){
+      if (!threeDice || !threeDice.ready || !window.THREE) return;
+      const old = threeDice.die;
+      if (old) {
+        threeDice.group.remove(old);
+        old.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+      }
+      const die = threeDieGroup(sides);
+      threeDice.die = die;
+      threeDice.group.add(die);
+    }
+    function threeRoll(){
+      if (!threeDice || !threeDice.ready) return;
+      const d = threeDice;
+      d.vx = (10 + Math.random() * 8) * (Math.random() < 0.5 ? -1 : 1);
+      d.vy = (10 + Math.random() * 8) * (Math.random() < 0.5 ? -1 : 1);
+      d.vz = (Math.random() * 6 - 3);
+      d.rollT = 0;
+    }
+    function threeTick(){
+      const d = threeDice;
+      if (!d) return;
+      requestAnimationFrame(threeTick);
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - d.last) / 1000 || 0.016);
+      d.last = now;
+      const speed = Math.hypot(d.vx, d.vy, d.vz);
+      if (speed > 0.4) {
+        d.group.rotation.x += d.vx * dt;
+        d.group.rotation.y += d.vy * dt;
+        d.group.rotation.z += d.vz * dt;
+        const damp = Math.pow(0.1, dt);
+        d.vx *= damp; d.vy *= damp; d.vz *= damp;
+        d.rollT += dt;
+        d.group.position.y = Math.abs(Math.sin(Math.min(1, d.rollT / 1.3) * Math.PI)) * 0.45;
+      } else {
+        d.vx = d.vy = d.vz = 0;
+        d.group.rotation.y += dt * 0.5;
+        d.group.position.y *= 0.9;
+      }
+      d.renderer.render(d.scene, d.camera);
+    }
+    function threeInitDice(){
+      if (threeDice || !document.getElementById('dice3d')) return;
+      ensureThree().then(() => {
+        try {
+          const T = window.THREE;
+          const mount = document.getElementById('dice3d');
+          const W = 240, H = 200;
+          const renderer = new T.WebGLRenderer({ alpha: true, antialias: true });
+          renderer.setSize(W, H);
+          renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+          mount.appendChild(renderer.domElement);
+          const scene = new T.Scene();
+          const camera = new T.PerspectiveCamera(38, W / H, 0.1, 100);
+          camera.position.set(0, 0.9, 4.8);
+          camera.lookAt(0, 0, 0);
+          scene.add(new T.AmbientLight(0xfff2dd, 0.8));
+          const key = new T.DirectionalLight(0xffffff, 0.85);
+          key.position.set(3, 5, 4);
+          scene.add(key);
+          const rim = new T.DirectionalLight(0xd6a670, 0.45);
+          rim.position.set(-4, -2, -3);
+          scene.add(rim);
+          const group = new T.Group();
+          scene.add(group);
+          threeDice = { renderer, scene, camera, group, die: null, vx: 0, vy: 0, vz: 0, rollT: 9, last: performance.now(), ready: true };
+          threeSetDie(currentDie);
+          mount.style.display = 'block';
+          const fallback = document.querySelector('#pageDM .dice-scene');
+          if (fallback) fallback.style.display = 'none';
+          requestAnimationFrame(threeTick);
+        } catch (e) { threeDice = null; }
+      }).catch(() => { threeDice = null; });
+    }
 
     /* ---- Creator ---- */
     const CREATOR_VOLK = [
@@ -2793,7 +2947,6 @@
       creatorState.klasse=CREATOR_KLASSE[Math.floor(Math.random()*CREATOR_KLASSE.length)].n;
       creatorRollAttrs(); renderCreator();
     }
-    function newSlotWithCreator(){ newSlot(); showPage('DM'); setTimeout(()=>document.getElementById('dmCreator')?.scrollIntoView({behavior:'smooth'}), 80); }
     function creatorApply(){
       const asNew = document.getElementById('creatorNewSlot')?.checked;
       if(asNew){
@@ -2802,6 +2955,8 @@
         try{ writeSlot(id,{}); }catch(e){ alert('Kein Speicherplatz.'); return; }
         const idx=getSlotIndex(); idx.push({id:id,name:creatorState.name||''}); setSlotIndex(idx); setActiveSlotId(id);
         resetForm(); renderSlotOptions();
+      } else if(hasActiveCharacter()){
+        if(!window.confirm('Der aktuelle Charakter wird mit den Creator-Daten überschrieben. Fortfahren?')) return;
       }
       const map={STR:'stärke',GES:'geschicklichkeit',KON:'konstitution',INT:'intelligenz',WEI:'weisheit',CHA:'charisma'};
       Object.keys(map).forEach(k=>{ const el=document.getElementById(map[k]); if(el) el.value=creatorState.attrs[k]; });
@@ -2977,6 +3132,7 @@
         renderCreator(); renderCreatures(); renderItems();
         loadPartyFromSlots(); renderEncounterRows(); renderWikiList();
         showWikiArticle('goblin');
+        threeInitDice();
       }
     }
 
