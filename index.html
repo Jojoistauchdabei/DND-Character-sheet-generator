@@ -688,7 +688,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 10.09.2026-7</span>
+        <span class="version-tag">BUILD 10.09.2026-8</span>
       </div>
     </div>
 
@@ -2761,16 +2761,89 @@
       }
       return threeLoading;
     }
-    function threeBipyramid(T, mat, edge, s){
+    function makeNumberSprite(text, scale){
+      const T = window.THREE;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 128;
+      const ctx = cv.getContext('2d');
+      ctx.font = 'bold 76px Cinzel, Georgia, "Times New Roman", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = 'rgba(245,236,217,0.9)';
+      ctx.strokeText(text, 64, 68);
+      ctx.fillStyle = '#6b4423';
+      ctx.fillText(text, 64, 68);
+      const tex = new T.CanvasTexture(cv);
+      const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthTest: true, depthWrite: false }));
+      sp.scale.setScalar(scale);
+      return sp;
+    }
+    function addFaceNumbers(parent, geo, labels, numScale, pushOut){
+      const T = window.THREE;
+      const pos = geo.attributes.position;
+      const tris = [];
+      const va = new T.Vector3(), vb = new T.Vector3(), vc = new T.Vector3();
+      const e1 = new T.Vector3(), e2 = new T.Vector3();
+      const pushTri = (a, b, c) => {
+        va.fromBufferAttribute(pos, a); vb.fromBufferAttribute(pos, b); vc.fromBufferAttribute(pos, c);
+        e1.subVectors(vb, va); e2.subVectors(vc, va);
+        const n = new T.Vector3().crossVectors(e1, e2);
+        if (n.length() < 1e-6) return;
+        n.normalize();
+        tris.push({ c: new T.Vector3().addVectors(va, vb).add(vc).multiplyScalar(1 / 3), n });
+      };
+      if (geo.index) {
+        const ix = geo.index.array;
+        for (let f = 0; f < ix.length; f += 3) pushTri(ix[f], ix[f + 1], ix[f + 2]);
+      } else {
+        for (let f = 0; f < pos.count; f += 3) pushTri(f, f + 1, f + 2);
+      }
+      // Dreiecke mit gleicher Normale = eine Fläche (fängt auch Fünfecke des W12 ab)
+      const groups = [];
+      tris.forEach(t => {
+        let g = null;
+        for (const h of groups) { if (h.n.dot(t.n) > 0.998) { g = h; break; } }
+        if (!g) { g = { n: t.n.clone(), cs: [] }; groups.push(g); }
+        g.cs.push(t.c);
+      });
+      groups.forEach((g, i) => {
+        if (i >= labels.length) return;
+        const c = new T.Vector3();
+        g.cs.forEach(v => c.add(v));
+        c.multiplyScalar(1 / g.cs.length).multiplyScalar(pushOut || 1.05);
+        const sp = makeNumberSprite(String(labels[i]), numScale);
+        sp.position.copy(c);
+        parent.add(sp);
+      });
+    }
+    function threeBipyramid(T, mat, edge, s, upperLabels, lowerLabels, numScale){
       const b = new T.Group();
-      const topGeo = new T.ConeGeometry(1.0, 0.95, 5);
-      const tm = new T.Mesh(topGeo, mat); tm.position.y = 0.475;
-      const te = new T.LineSegments(new T.EdgesGeometry(topGeo, 15), edge); te.position.y = 0.475;
-      const botGeo = new T.ConeGeometry(1.0, 0.95, 5);
-      const bm = new T.Mesh(botGeo, mat); bm.rotation.x = Math.PI; bm.position.y = -0.475;
-      const be = new T.LineSegments(new T.EdgesGeometry(botGeo, 15), edge);
-      be.rotation.x = Math.PI; be.rotation.y = Math.PI / 5; be.position.y = -0.475;
-      b.add(tm); b.add(te); b.add(bm); b.add(be);
+      const mkCone = (flip) => {
+        const holder = new T.Group();
+        const geo = new T.ConeGeometry(1.0, 0.95, 5);
+        holder.add(new T.Mesh(geo, mat));
+        holder.add(new T.LineSegments(new T.EdgesGeometry(geo, 15), edge));
+        if (flip) holder.rotation.x = Math.PI;
+        return holder;
+      };
+      // Seitenflächen-Mittelpunkte im Kegel-Raum (Theta startet bei +Z, 5 Segmente)
+      const placeNumbers = (holder, labels) => {
+        for (let k = 0; k < 5; k++) {
+          const mid = (k + 0.5) * Math.PI * 2 / 5;
+          const sp = makeNumberSprite(String(labels[k]), numScale);
+          sp.position.set(Math.sin(mid) * 0.62, -0.174, Math.cos(mid) * 0.62);
+          holder.add(sp);
+        }
+      };
+      const up = mkCone(false);
+      up.position.y = 0.475;
+      placeNumbers(up, upperLabels);
+      const lo = mkCone(true);
+      lo.position.y = -0.475;
+      lo.rotation.y = Math.PI / 5;
+      placeNumbers(lo, lowerLabels);
+      b.add(up); b.add(lo);
       b.rotation.y = Math.PI / 5;
       b.scale.setScalar(s);
       return b;
@@ -2780,23 +2853,27 @@
       const g = new T.Group();
       const mat = new T.MeshStandardMaterial({ color: 0xead9b8, roughness: 0.5, metalness: 0.25, flatShading: true });
       const edge = new T.LineBasicMaterial({ color: 0x8b5a2b });
-      const add = (geo) => {
+      const addSolid = (geo, labels, numScale) => {
         const holder = new T.Group();
         holder.add(new T.Mesh(geo, mat));
         holder.add(new T.LineSegments(new T.EdgesGeometry(geo, 15), edge));
+        addFaceNumbers(holder, geo, labels, numScale, 1.05);
         g.add(holder);
       };
-      if (sides === 4) { add(new T.TetrahedronGeometry(1.55)); g.rotation.x = 0.35; }
-      else if (sides === 6) add(new T.BoxGeometry(1.5, 1.5, 1.5));
-      else if (sides === 8) add(new T.OctahedronGeometry(1.35));
-      else if (sides === 12) add(new T.DodecahedronGeometry(1.2));
-      else if (sides === 20) add(new T.IcosahedronGeometry(1.25));
+      const seq = (a, b) => { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; };
+      if (sides === 4) { addSolid(new T.TetrahedronGeometry(1.55), [1, 2, 3, 4], 0.55); g.rotation.x = 0.35; }
+      else if (sides === 6) addSolid(new T.BoxGeometry(1.5, 1.5, 1.5), [1, 6, 2, 5, 3, 4], 0.55);
+      else if (sides === 8) addSolid(new T.OctahedronGeometry(1.35), seq(1, 8), 0.5);
+      else if (sides === 12) addSolid(new T.DodecahedronGeometry(1.2), seq(1, 12), 0.45);
+      else if (sides === 20) addSolid(new T.IcosahedronGeometry(1.25), seq(1, 20), 0.42);
       else if (sides === 100) {
-        const l = threeBipyramid(T, mat, edge, 0.78); l.position.x = -0.85;
-        const r = threeBipyramid(T, mat, edge, 0.78); r.position.x = 0.85;
+        const l = threeBipyramid(T, mat, edge, 0.78, ['00', '10', '20', '30', '40'], ['50', '60', '70', '80', '90'], 0.5);
+        l.position.x = -0.85;
+        const r = threeBipyramid(T, mat, edge, 0.78, ['0', '1', '2', '3', '4'], ['5', '6', '7', '8', '9'], 0.5);
+        r.position.x = 0.85;
         g.add(l); g.add(r);
       }
-      else g.add(threeBipyramid(T, mat, edge, 1.15)); // W10
+      else g.add(threeBipyramid(T, mat, edge, 1.15, ['0', '1', '2', '3', '4'], ['5', '6', '7', '8', '9'], 0.5)); // W10
       return g;
     }
     function threeSetDie(sides){
@@ -2804,7 +2881,13 @@
       const old = threeDice.die;
       if (old) {
         threeDice.group.remove(old);
-        old.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+        old.traverse(o => {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            mats.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+          }
+        });
       }
       const die = threeDieGroup(sides);
       threeDice.die = die;
