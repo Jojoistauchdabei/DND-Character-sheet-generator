@@ -21,6 +21,7 @@
     <div class="header">
       <h1>⚔ D&D CHARAKTERBOGEN ⚔</h1>
       <div class="buttons">
+        <button onclick="location.href='wiki.html'">📖 Wiki-Seite</button>
         <button onclick="exportJSON()">⬇ Export JSON</button>
         <button onclick="document.getElementById('importFile').click()">⬆ Import JSON</button>
         <button onclick="exportPDF()">⬇ Export PDF</button>
@@ -511,7 +512,7 @@
       </div>
       <div class="box" id="dmWiki">
         <div class="field-header"><label>📖 Wiki von Aventuria</label><span class="dm-badge">WISSEN</span></div>
-        <div class="wiki-search"><input type="text" id="wikiSearch" placeholder="Suchen: Goblin, Langschwert, Betäubt, Stärke..." oninput="renderWikiList()"><button type="button" onclick="renderWikiList()">Suchen</button></div>
+        <div class="wiki-search"><input type="text" id="wikiSearch" placeholder="Suchen: Goblin, Langschwert, Betäubt, Stärke..." oninput="renderWikiList()"><button type="button" onclick="renderWikiList()">Suchen</button><button type="button" class="inactive" onclick="location.href='wiki.html'">📖 Extra Wiki-Seite mit Bildern öffnen</button></div>
         <div class="dm-grid">
           <div><label>Artikel</label><div id="wikiList"></div></div>
           <div class="wiki-article" id="wikiArticle"><h2>Willkommen</h2><p>Wähle links einen Artikel. Alle <span class="wiki-link" onclick="openWiki('goblin')">Kreaturen</span>, <span class="wiki-link" onclick="openWiki('langschwert')">Gegenstände</span> und Regeln haben Popups mit Bildern.</p></div>

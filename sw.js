@@ -1,8 +1,9 @@
 /* D&D Charakterbogen – Service Worker (App-Shell offline). */
-const CACHE = 'dnd-char-v10';
+const CACHE = 'dnd-char-v11';
 const ASSETS = [
   './',
   'index.html',
+  'wiki.html',
   'manifest.webmanifest',
   'css/styles.css',
   'js/data.js',

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#8b5a2b">
+  <title>D&D Wiki von Aventuria – mit Bildern</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .wiki-hero { text-align: center; margin: 10px 0 16px; }
+    .wiki-hero h1 { font-family: 'Cinzel', serif; color: var(--accent); letter-spacing: 2px; font-size: 28px; }
+    .wiki-hero p { font-size: 15px; max-width: 720px; margin: 6px auto 0; }
+    .wiki-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .wiki-toolbar input { flex: 1; min-width: 200px; }
+    .cat-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .cat-bar button.active { background: var(--accent-dark); }
+    .wiki-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .wiki-card { border: 2px solid var(--accent); background: var(--surface); overflow: hidden; display: flex; flex-direction: column; }
+    .wiki-card img { width: 100%; height: 170px; object-fit: cover; background: var(--surface-strong); display: block; }
+    .wiki-card .img-fallback { height: 170px; display: flex; align-items: center; justify-content: center; font-size: 64px; background: var(--surface-strong); }
+    .wiki-card .body { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .wiki-card h3 { font-family: 'Cinzel', serif; font-size: 15px; color: var(--accent); }
+    .wiki-card .meta { font-size: 12px; color: var(--accent-muted); }
+    .wiki-card p { font-size: 14px; line-height: 1.5; }
+    .wiki-card .license { font-size: 11px; opacity: .75; margin-top: auto; }
+    .wiki-count { font-family: 'Cinzel', serif; font-size: 12px; color: var(--accent-muted); margin-bottom: 8px; }
+    .wiki-footer { margin: 22px 0 10px; font-size: 12px; border: 1px solid var(--border-light); background: var(--surface); padding: 10px 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📖 WIKI VON AVENTURIA</h1>
+      <div class="buttons">
+        <button onclick="location.href='index.html'">⚔ Zurück zum Bogen</button>
+        <button class="inactive" onclick="document.getElementById('search').focus()">🔍 Suchen</button>
+      </div>
+    </div>
+
+    <div class="box wiki-hero">
+      <h1>D&D 5E Wiki mit Bildern</h1>
+      <p>Extra-Seite zum DM-Wiki aus dem Bogen: <b>Kreaturen, Gegenstände, Klassen, Völker &amp; Regeln</b> – alle Artikel mit frei nutzbaren Bildern aus dem Internet (Wikimedia Commons / Unsplash). Suche oder filtere nach Kategorie. Klick auf ein Bild öffnet es in groß.</p>
+    </div>
+
+    <div class="box">
+      <div class="wiki-toolbar">
+        <input type="text" id="search" placeholder="Suchen: Drache, Heiltrank, Stärke, Initiative..." oninput="renderWiki()">
+        <select id="sort" onchange="renderWiki()">
+          <option value="kat">Sortierung: Kategorie</option>
+          <option value="az">Sortierung: A–Z</option>
+        </select>
+      </div>
+      <div class="cat-bar" id="catBar"></div>
+      <div class="wiki-count" id="count"></div>
+      <div class="wiki-grid" id="grid"></div>
+    </div>
+
+    <div class="wiki-footer">
+      <b>Bildnachweise:</b> Alle Bilder sind frei nutzbar via <b>Wikimedia Commons</b> (Public Domain / CC0 / CC-BY / CC-BY-SA, z. B. Batten, LadyofHats, Kittelsen, Bertuch, Delacroix, Uccello, Waterhouse, Wellcome Library, MET Open Access, US-NPS) oder <b>Unsplash License</b> (frei, kein Nachweis nötig, Symbolbilder für Attribute/Regeln/Klassen/Völker). Details &amp; Autoren stehen pro Karte + auf der jeweiligen Commons-Dateiseite. D&D-Werte nach SRD 5.1 (WotC, OGL). Eulenbär, Mimik, Betrachter &amp; Gallertwürfel sind D&D-Eigenkreationen – Bebilderung als Symbolbild.
+    </div>
+  </div>
+
+<script>
+const WIKI_EXTRA = [
+/* ---- KREATUREN (Recherche: Subagent 1) ---- */
+{id:'goblin',kat:'Kreaturen',emoji:'👺',t:'Goblin',meta:'HG 1/4 • RK 15 • TP 7 (2D6)',img:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Goblin_by_John_D_Batten.jpg/640px-Goblin_by_John_D_Batten.jpg',lic:'Public Domain: John D. Batten (1890), via Commons',txt:'Kleiner, heimtückischer Humanoid in Stämmen aus Höhlen und Ruinen. Meister des Hinterhalts mit Nimble Escape (Verstecken als Bonusaktion), Krumsäbel und Kurzbogen. Schwäche: Sonnenlicht-Empfindlichkeit.'},
+{id:'ork',kat:'Kreaturen',emoji:'👹',t:'Ork',meta:'HG 1/2 • RK 13 • TP 15',img:'https://upload.wikimedia.org/wikipedia/commons/d/d0/DnD_Orc.png',lic:'CC0: LadyofHats, via Commons',txt:'Brutaler Krieger des Gruumsh. Aggressiv: darf sich als Bonusaktion auf Feinde zubewegen. Greifaxt +5, Wurfspeer. Kämpft bis zum Tod.'},
+{id:'skelett',kat:'Kreaturen',emoji:'💀',t:'Skelett',meta:'HG 1/4 • RK 13 • TP 13',img:'https://upload.wikimedia.org/wikipedia/commons/1/13/Anathomia._Human_skeleton_front_view._In_black_(rubbed)._Wellcome_L0045187.jpg',lic:'CC-BY 4.0: Wellcome Library, via Commons',txt:'Belebtes Skelett durch Nekromantie. Immun gegen Gift & Erschöpfung, anfällig für Wuchtschaden. Kurzbogen und Kurzschwert.'},
+{id:'wolf',kat:'Kreaturen',emoji:'🐺',t:'Düsterwolf',meta:'HG 1 • RK 14 • TP 37',img:'https://upload.wikimedia.org/wikipedia/commons/5/53/Scandinavian_grey_wolf_Canis_lupus.jpg',lic:'CC-BY-SA: Malene Thyssen, via Commons',txt:'Riesiger Rudeljäger, oft Reittier von Goblins. Rudeltaktik: Vorteil wenn Verbündete nah sind. Biss + Umreißen (SG 13 STR).'},
+{id:'eulenbaer',kat:'Kreaturen',emoji:'🦉',t:'Eulenbär (Symbolbild)',meta:'HG 3 • RK 13 • TP 59',img:'https://upload.wikimedia.org/wikipedia/commons/7/71/2010-kodiak-bear-1.jpg',lic:'Public Domain: US Fish & Wildlife Service (Symbolbild)',txt:'Mischung aus Eule und Bär, extrem territorial. Multiangriff: Schnabel + Klauen. D&D-Erfindung – Bild als Symbol (Eule + Bär).'},
+{id:'mimik',kat:'Kreaturen',emoji:'📦',t:'Mimik (Symbolbild: Truhe)',meta:'HG 2 • RK 12 • TP 58',img:'https://upload.wikimedia.org/wikipedia/commons/4/4e/Treasure_chest_in_Schloss_Marienburg.jpg',lic:'CC-BY-SA, via Commons (Symbolbild Truhe)',txt:'Formwandler, tarnt sich als Truhe oder Tür. Klebt Opfer fest (Entkommen SG 13), Pseudopod + Säurebiss.'},
+{id:'troll',kat:'Kreaturen',emoji:'🧌',t:'Troll',meta:'HG 5 • RK 15 • TP 84',img:'https://upload.wikimedia.org/wikipedia/commons/8/8f/Theodor_Kittelsen_-_Skogtroll%2C_1906_%28Forest_Troll%29.jpg',lic:'Public Domain: Theodor Kittelsen (1906)',txt:'Regeneriert 10 TP pro Runde – nur Feuer & Säure stoppen ihn. Multiangriff Biss + Klaue. Riecht Beute auf große Distanz.'},
+{id:'drache',kat:'Kreaturen',emoji:'🐲',t:'Junger Roter Drache',meta:'HG 10 • RK 18 • TP 178',img:'https://upload.wikimedia.org/wikipedia/commons/6/68/Friedrich-Johann-Justin-Bertuch_Mythical-Creature-Dragon_1806.jpg',lic:'Public Domain: F. J. Bertuch (1806)',txt:'Eitler chromatischer Drache, hortet Schätze. Feuerodem 16W6 (SG 17 GES), fliegt 24 m. Ideal als Akt-Boss für Stufe 5–8.'},
+{id:'beholder',kat:'Kreaturen',emoji:'👁️',t:'Betrachter (Symbolbild: Auge)',meta:'HG 13 • RK 18 • TP 180',img:'https://upload.wikimedia.org/wikipedia/commons/9/9e/Human_eye_with_blood_vessels.jpg',lic:'CC-BY-SA, via Commons (Symbolbild, Beholder ist WotC-IP)',txt:'Schwebende Aberration: Zentralauge = Antimagie-Kegel, 10 Augenstiele (Desintegration, Tod, Versteinerung u. v. m.).'},
+{id:'schleim',kat:'Kreaturen',emoji:'🟩',t:'Gallertwürfel (Symbolbild)',meta:'HG 2 • RK 6 • TP 84',img:'https://upload.wikimedia.org/wikipedia/commons/0/09/Ice_cubes.jpg',lic:'CC-BY-SA, via Commons (Symbolbild)',txt:'Durchsichtiger 3-m-Würfel, fast unsichtbar in Gängen. Verschlingt Opfer (3W6 Säure), betäubt Eingeschlossene.'},
+{id:'bandit',kat:'Kreaturen',emoji:'🥷',t:'Banditenhauptmann',meta:'HG 2 • RK 15 • TP 65',img:'https://upload.wikimedia.org/wikipedia/commons/9/92/Blackbeard-c1730s.jpg',lic:'Public Domain: Stich 18. Jh. (Symbolbild)',txt:'Gerissener Anführer von Räuberbanden. Multiangriff mit Krummsäbel oder Armbrust, Parieren (+2 RK als Reaktion).'},
+{id:'geist',kat:'Kreaturen',emoji:'👻',t:'Gespenst',meta:'HG 4 • RK 11 • TP 45',img:'https://upload.wikimedia.org/wikipedia/commons/7/74/Delacroix_Ghost_of_Hamlet%27s_father.jpg',lic:'Public Domain: Eugène Delacroix (1825)',txt:'Untoter Geist mit unerledigter Aufgabe. Horrifying Visage (Altern), Withering Touch, resistent gegen nichtmagische Waffen.'},
+/* ---- GEGENSTÄNDE (Recherche: Subagent 2) ---- */
+{id:'langschwert',kat:'Gegenstände',emoji:'🗡️',t:'Langschwert +1',meta:'Ungewöhnlich • Waffe • 500 GM',img:'https://upload.wikimedia.org/wikipedia/commons/1/18/Longsword_15c.jpg',lic:'CC-BY-SA 3.0: Gladifer, via Commons',txt:'+1 auf Angriff & Schaden (1W8/1W10 vielseitig). Überwindet Resistenzen gegen nichtmagische Waffen. Für Kämpfer, Paladine, Paktklingen.'},
+{id:'feuerballstab',kat:'Gegenstände',emoji:'🔥',t:'Stab des Feuerballs',meta:'Selten • Stab • 3.500 GM',img:'https://upload.wikimedia.org/wikipedia/commons/4/48/Medieval_Man_with_Cloak_and_Staff.JPG',lic:'Public Domain: Paul Mercuri (1861)',txt:'7 Ladungen, Feuerball 8W6 (SG 15). Lädt 1W6+1 bei Sonnenaufgang nach. Letzte Ladung riskiert Zerstörung mit Flächenschaden.'},
+{id:'heiltrank',kat:'Gegenstände',emoji:'🧪',t:'Heiltrank (Superior)',meta:'Selten • Verbrauch • 450 GM',img:'https://upload.wikimedia.org/wikipedia/commons/c/cc/Apothecary_Bottles.JPG',lic:'CC-BY-SA 3.0: Angela Andriot, via Commons',txt:'Heilt 8W4+8 TP als Aktion – getrunken oder verabreicht. Rote dickflüssige Essenz. Standard ab Stufe 5–10.'},
+{id:'kettenhemd',kat:'Gegenstände',emoji:'⛓️',t:'Mithril-Kettenhemd',meta:'Ungewöhnlich • Rüstung • 800 GM',img:'https://upload.wikimedia.org/wikipedia/commons/a/a9/Japanese_kusari_armor.JPG',lic:'CC-BY-SA 3.0: Samuraiantiqueworld',txt:'RK 13 + GES (max 2). Federleichtes Elfen-Mithril: kein Nachteil auf Heimlichkeit, keine Stärke-Voraussetzung.'},
+{id:'umhang',kat:'Gegenstände',emoji:'🧥',t:'Umhang der Elfen',meta:'Ungewöhnlich • Einstimmung • 500 GM',img:'https://upload.wikimedia.org/wikipedia/commons/2/27/DnD_Elven.png',lic:'CC0: LadyofHats, via Commons',txt:'Vorteil auf Heimlichkeit, Feinde mit Nachteil auf Wahrnehmung. Grün-grau schimmernd, passt sich der Umgebung an.'},
+{id:'beutel',kat:'Gegenstände',emoji:'🎒',t:'Beutel des Haltens',meta:'Ungewöhnlich • Behälter • 400 GM',img:'https://upload.wikimedia.org/wikipedia/commons/4/4a/YELL_7126-_leather_beaded_pouch_%2851692347700%29.jpg',lic:'Public Domain: US-NPS / J. W. Frank',txt:'64 Kubikfuß innen, 500 Pfund bei 15 Pfund Eigengewicht. Vorsicht: Atmende ersticken nach 10 Minuten, scharfe Items zerreißen ihn.'},
+{id:'bogen',kat:'Gegenstände',emoji:'🏹',t:'Schwurbogen (Oathbow)',meta:'Sehr selten • Waffe • 6.000 GM',img:'https://upload.wikimedia.org/wikipedia/commons/4/49/Longbow_man.jpg',lic:'CC-BY 3.0: abdesk2008, via Commons',txt:'Bonusaktion: Schwurfeind wählen – Vorteil + 3W6 Extra. Nur ein Feind gleichzeitig, Fluch endet erst mit Tod.'},
+{id:'amulett',kat:'Gegenstände',emoji:'📿',t:'Amulett der Gesundheit',meta:'Selten • Einstimmung • 4.000 GM',img:'https://upload.wikimedia.org/wikipedia/commons/8/8d/Necklace_MET_26.7.1378.jpg',lic:'CC0: Metropolitan Museum Open Access',txt:'Setzt Konstitution auf 19 solange getragen. Stärkt TP, Konzentration & Gift-Rettungen. Beliebt bei fragilen Zauberern.'},
+{id:'stiefel',kat:'Gegenstände',emoji:'🥾',t:'Stiefel der Geschwindigkeit',meta:'Selten • Einstimmung • 3.000 GM',img:'https://upload.wikimedia.org/wikipedia/commons/2/2f/Hiking_shoes_Lowa.jpg',lic:'CC-BY-SA, via Commons',txt:'Bonusaktion: doppelte Bewegung, Gelegenheitsangriffe gegen dich mit Nachteil. 10 Minuten pro Kurzer Rast. Für Scouts & Mönche.'},
+{id:'ring',kat:'Gegenstände',emoji:'💍',t:'Ring des Schutzes',meta:'Selten • Einstimmung • 3.500 GM',img:'https://upload.wikimedia.org/wikipedia/commons/b/b7/Gold_ring_MET_DP109248.jpg',lic:'CC0: Metropolitan Museum Open Access',txt:'+1 RK und +1 auf alle Rettungswürfe. Stapelbar mit Rüstung & Schild. Nur ein Ring des Schutzes gleichzeitig.'},
+{id:'teppich',kat:'Gegenstände',emoji:'🧞',t:'Fliegender Teppich',meta:'Sehr selten • Transport • 12.000 GM',img:'https://upload.wikimedia.org/wikipedia/commons/8/8e/Flying_carpet.jpg',lic:'Public Domain: Viktor Vasnetsov',txt:'Kommandowort lässt ihn schweben (30–80 Fuß, 200–800 Pfund je Größe). Folgt Anweisungen in 30 Fuß. Für die ganze Gruppe.'},
+{id:'wuerfel',kat:'Gegenstände',emoji:'🎲',t:'Würfel der Macht',meta:'Artefakt (Homebrew) • 1×/Tag',img:'https://upload.wikimedia.org/wikipedia/commons/e/e5/Dice_%28typical_role_playing_game_dice%29.jpg',lic:'CC-BY-SA 3.0: Diacritica, via Commons',txt:'Einmal pro Tag einen Wurf mit Vorteil wiederholen (Homebrew-Artefakt im Stil des W20-Sets). DM-Laune inklusive.'},
+/* ---- ATTRIBUTE / REGELN / KLASSEN / VÖLKER (Recherche: Subagent 3) ---- */
+{id:'staerke',kat:'Attribute',emoji:'💪',t:'Stärke (STR)',meta:'Attribut • Nahkampf • Athletik',img:'https://upload.wikimedia.org/wikipedia/commons/4/46/Strongman_Squat.JPG',lic:'CC-BY-SA 3.0: Artur Andrzej',txt:'Rohe Körperkraft: Nahkampf-Angriff & Schaden, Tragen/Heben/Springen/Ringen, Athletik. Mod = (Wert−10)/2. Rettung gegen Greifen & Schieben.'},
+{id:'ges',kat:'Attribute',emoji:'🤸',t:'Geschicklichkeit (GES)',meta:'Attribut • Initiative • RK',img:'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Beweglichkeit & Reflexe: Initiative, Fernkampf, RK ohne schwere Rüstung. Akrobatik, Heimlichkeit, Fingerfertigkeit. Rettung gegen Feuerball & Fallen.'},
+{id:'kon',kat:'Attribute',emoji:'❤️',t:'Konstitution (KON)',meta:'Attribut • TP • Konzentration',img:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Gesundheit & Ausdauer: +TP pro Stufe, Rettung gegen Gift/Krankheit/Erschöpfung und Konzentration bei Schaden.'},
+{id:'int',kat:'Attribute',emoji:'🧠',t:'Intelligenz (INT)',meta:'Attribut • Wissen • Magier',img:'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Wissen & Logik: Arkana, Geschichte, Nachforschungen, Naturkunde, Religion. Zauberattribut des Magiers. Rettung gegen Illusionen.'},
+{id:'wei',kat:'Attribute',emoji:'🦉',t:'Weisheit (WEI)',meta:'Attribut • Wahrnehmung • Kleriker',img:'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Intuition & Willensstärke: Wahrnehmung, Einsicht, Medizin, Überleben. Zauberattribut von Kleriker & Druide. Rettung gegen Bezauberung & Furcht.'},
+{id:'cha',kat:'Attribute',emoji:'✨',t:'Charisma (CHA)',meta:'Attribut • Soziales • Barden',img:'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Ausstrahlung & Führung: Einschüchtern, Überzeugen, Täuschen, Auftreten. Zauberattribut von Barde, Hexenmeister, Zauberer & Paladin.'},
+{id:'wahrnehmung',kat:'Regeln',emoji:'👀',t:'Wahrnehmung',meta:'Fertigkeit (WEI) • Passiv 10+Mod',img:'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Wichtigste Fertigkeit: Hinterhalte, Fallen & Geheimtüren entdecken. Passiv 10 + Mod + Übung gegen Heimlichkeit.'},
+{id:'heimlichkeit',kat:'Regeln',emoji:'🥷',t:'Heimlichkeit',meta:'Fertigkeit (GES)',img:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Leise bewegen & verstecken – gegen passive Wahrnehmung. Ohne volle Deckung oder Verschleierung kein Verstecken.'},
+{id:'vorteil',kat:'Regeln',emoji:'🎲',t:'Vorteil / Nachteil',meta:'Grundregel • 2W20',img:'https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Vorteil: 2W20 höherer zählt. Nachteil: niedrigerer zählt (≈ ±5). Stapelt nicht, hebt sich gegenseitig auf.'},
+{id:'betaeubt',kat:'Regeln',emoji:'💫',t:'Betäubt',meta:'Zustand • stark',img:'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Handlungsunfähig, kaum Bewegung, nur Stammeln. STR/GES-Rettungen scheitern automatisch, Angriffe gegen dich mit Vorteil.'},
+{id:'initiative',kat:'Regeln',emoji:'⚡',t:'Initiative',meta:'Kampf • W20 + GES',img:'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'1W20 + GES zu Kampfbeginn, absteigend = Rundenreihenfolge. Gleichstand: höherer Mod, sonst DM-Entscheid.'},
+{id:'rk',kat:'Regeln',emoji:'🛡️',t:'Rüstungsklasse (RK)',meta:'Kampf • Treffen ab RK',img:'https://upload.wikimedia.org/wikipedia/commons/8/87/Saint_George_and_the_Dragon_by_Paolo_Uccello_%28Paris%29_01.jpg',lic:'Public Domain: Paolo Uccello (1475)',txt:'Angriff trifft bei Wurf ≥ RK. Basis 10 + GES + Rüstung + Schild (+2) + Magie. Schwere Rüstung ohne DEX.'},
+{id:'tp',kat:'Regeln',emoji:'❤️',t:'Trefferpunkte (TP)',meta:'Kampf • 0 = bewusstlos',img:'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Bei 0 TP bewusstlos + Todesrettung (3× Erfolg = stabil). Kurze Rast: Trefferwürfel heilen. Lange Rast: voll + halbe Würfel zurück.'},
+{id:'zaubern',kat:'Regeln',emoji:'✨',t:'Zaubern',meta:'Magie • SG 8+Übung+Mod',img:'https://upload.wikimedia.org/wikipedia/commons/f/f8/John_William_Waterhouse_-_Magic_Circle.JPG',lic:'Public Domain: J. W. Waterhouse (1886)',txt:'Aktion + Slot. SG = 8 + Übung + Zaubermod, Angriff = W20 + Übung + Mod. Nur 1 Konzentrationszauber aktiv.'},
+{id:'barbar',kat:'Klassen',emoji:'🪓',t:'Barbar',meta:'W12 • Wut • Front',img:'https://upload.wikimedia.org/wikipedia/commons/f/f4/Deadlift.JPG',lic:'CC-BY-SA 3.0: Artur Andrzej',txt:'Primaler Frontkämpfer: Wut = Bonus-Schaden + Resistenz Hieb/Stich/Wucht. Ungerüstete Verteidigung, Reckless Attack, Extra-Angriff.'},
+{id:'magier',kat:'Klassen',emoji:'🧙',t:'Magier',meta:'W6 • Zauberbuch • INT',img:'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Arkaner Vollzauberer mit größter Liste, Ritualen ohne Slot & Arkaner Erholung. Fragil, aber mächtig vorbereitet.'},
+{id:'kleriker',kat:'Klassen',emoji:'🙏',t:'Kleriker',meta:'W8 • WEI • Heiler',img:'https://images.unsplash.com/photo-1519791883288-dc8bd696e667?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Göttlicher Vollzauberer (WEI) mit Rüstung & Schild. Heilt, vertreibt Untote (Channel Divinity), Domänen-Boni. Täglich neu vorbereitet.'},
+{id:'schurke',kat:'Klassen',emoji:'🗡️',t:'Schurke',meta:'W8 • Sneak • Expertise',img:'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Skirmisher: Expertise (doppelte Übung), Diebeswerkzeuge, Sneak Attack bei Vorteil/Verbündetem, Cunning Action als Bonusaktion.'},
+{id:'paladin',kat:'Klassen',emoji:'🛡️',t:'Paladin',meta:'W10 • Smite • Eid',img:'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Heiliger Halbzauberer (CHA) in Platte: Divine Smite (Slots → Strahlschaden), Lay on Hands, Aura des Schutzes, Eid.'},
+{id:'druide',kat:'Klassen',emoji:'🌿',t:'Druide',meta:'W8 • Wildgestalt • WEI',img:'https://upload.wikimedia.org/wikipedia/commons/1/1e/Stonehenge.jpg',lic:'CC-BY-SA: Wigulf, via Commons',txt:'Natur-Vollzauberer (WEI): Wildgestalt (Tierform), Goodberry/Entangle, Zirkel-Boni. Spricht Druidisch, keine Metallrüstung.'},
+{id:'mensch',kat:'Völker',emoji:'🧑',t:'Mensch',meta:'Vielseitig • +1 alles',img:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Vielseitig & ehrgeizig: +1 alle Attribute (oder Variante + Feat). Gemeinsprache + 1 extra. Passt in jede Klasse – Einsteiger-Tipp.'},
+{id:'elf',kat:'Völker',emoji:'🧝',t:'Elf',meta:'+2 GES • Trance',img:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Anmutig, bis 750 Jahre: +2 GES, Dunkelsicht, Feenblut (Schlafimmun), 4-h-Trance. Hochelf: Cantrip. Waldelf: schneller & tarnig.'},
+{id:'zwerg',kat:'Völker',emoji:'⛰️',t:'Zwerg',meta:'+2 KON • Gift-Resistenz',img:'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Zäh & traditionsbewusst: +2 KON, Dunkelsicht, Gift-Resistenz, Axt/Hammer- & Werkzeugausbildung. Hügel: Extra-TP. Gebirge: +STR.'},
+{id:'halbling',kat:'Völker',emoji:'🍀',t:'Halbling',meta:'+2 GES • Glück',img:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Klein (~90 cm), mutig, gastfreundlich: +2 GES, Glück (1en wiederholen), Furcht-Vorteil. Versteckt sich hinter Größeren.'},
+{id:'tiefling',kat:'Völker',emoji:'😈',t:'Tiefling',meta:'+2 CHA • Feuer-Resistenz',img:'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Infernales Erbe (Hörner/Schweif): +2 CHA +1 INT, Dunkelsicht, Feuerresistenz, Thaumaturgie → Höllenrebuke & Dunkelheit.'},
+{id:'drachenkind',kat:'Völker',emoji:'🐲',t:'Drachengeborenes',meta:'+2 STR • Odemwaffe',img:'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800&q=80',lic:'Unsplash License (Symbolbild)',txt:'Stolz & drachisch: +2 STR +1 CHA, Drakonisch, Odemwaffe (Kegel/Linie, SG 8+CON+Übung) + Resistenz desselben Elements.'}
+];
+
+const CATS = ['Alle','Kreaturen','Gegenstände','Attribute','Regeln','Klassen','Völker'];
+let activeCat = 'Alle';
+function renderCats(){
+  const bar = document.getElementById('catBar');
+  bar.innerHTML = '';
+  CATS.forEach(c=>{
+    const b = document.createElement('button');
+    b.textContent = c;
+    if(c===activeCat) b.classList.add('active'); else b.classList.add('inactive');
+    b.onclick = ()=>{ activeCat = c; renderCats(); renderWiki(); };
+    bar.appendChild(b);
+  });
+}
+function renderWiki(){
+  const q = (document.getElementById('search').value||'').toLowerCase();
+  const sort = document.getElementById('sort').value;
+  let list = WIKI_EXTRA.filter(e => (activeCat==='Alle'||e.kat===activeCat) && (e.t+e.txt+e.meta).toLowerCase().includes(q));
+  if(sort==='az') list = [...list].sort((a,b)=>a.t.localeCompare(b.t,'de'));
+  else list = [...list].sort((a,b)=>CATS.indexOf(a.kat)-CATS.indexOf(b.kat) || a.t.localeCompare(b.t,'de'));
+  document.getElementById('count').textContent = list.length + ' von ' + WIKI_EXTRA.length + ' Artikeln mit Bildern';
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  list.forEach(e=>{
+    const card = document.createElement('div');
+    card.className = 'wiki-card';
+    card.innerHTML =
+      '<a href="'+e.img+'" target="_blank" rel="noopener"><img loading="lazy" src="'+e.img+'" alt="'+e.t+'" onerror="this.outerHTML=\'<div class=&quot;img-fallback&quot;>'+e.emoji+'</div>\'"></a>' +
+      '<div class="body"><h3>'+e.emoji+' '+e.t+'</h3>' +
+      '<div class="meta">'+e.kat+' • '+e.meta+'</div>' +
+      '<p>'+e.txt+'</p>' +
+      '<div class="license">Bild: '+e.lic+'</div></div>';
+    grid.appendChild(card);
+  });
+  if(!list.length) grid.innerHTML = '<p>Keine Treffer. Suche z. B. „Drache“, „Heiltrank“, „Stärke“.</p>';
+}
+renderCats(); renderWiki();
+</script>
+</body>
+</html>
