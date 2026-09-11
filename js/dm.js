@@ -255,23 +255,33 @@
       }
       return threeLoading;
     }
-    function makeNumberSprite(text, scale){
+    function makeNumberTexture(text){
       const T = window.THREE;
       const cv = document.createElement('canvas');
-      cv.width = cv.height = 128;
+      cv.width = cv.height = 256;
       const ctx = cv.getContext('2d');
-      ctx.font = 'bold 76px Cinzel, Georgia, "Times New Roman", serif';
+      ctx.font = 'bold 150px Cinzel, Georgia, "Times New Roman", serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = 'rgba(245,236,217,0.9)';
-      ctx.strokeText(text, 64, 68);
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = 'rgba(245,236,217,0.95)';
+      ctx.strokeText(text, 128, 136);
       ctx.fillStyle = '#6b4423';
-      ctx.fillText(text, 64, 68);
+      ctx.fillText(text, 128, 136);
       const tex = new T.CanvasTexture(cv);
-      const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthTest: true, depthWrite: false }));
-      sp.scale.setScalar(scale);
-      return sp;
+      tex.anisotropy = 4;
+      return tex;
+    }
+    // Zahl als fest aufgedrucktes Decal (Plane-Mesh): rotiert MIT dem Wuerfel,
+    // statt wie ein Sprite staendig flach zur Kamera zu zeigen.
+    function makeNumberDecal(text, size){
+      const T = window.THREE;
+      const mesh = new T.Mesh(
+        new T.PlaneGeometry(size, size),
+        new T.MeshBasicMaterial({ map: makeNumberTexture(text), transparent: true, depthTest: true, depthWrite: false })
+      );
+      mesh.renderOrder = 2;
+      return mesh;
     }
     function addFaceNumbers(parent, geo, labels, numScale, pushOut, die, sub, filterCaps){
       const T = window.THREE;
@@ -307,12 +317,12 @@
         const c = new T.Vector3();
         g.cs.forEach(v => c.add(v));
         c.multiplyScalar(1 / g.cs.length).multiplyScalar(pushOut || 1.05);
-        const sp = makeNumberSprite(String(labels[i]), numScale);
-        sp.position.copy(c);
-        parent.add(sp);
+        const decal = makeNumberDecal(String(labels[i]), numScale);
+        decal.position.copy(c);
+        parent.add(decal);
         if (die) {
           die.userData.faces = die.userData.faces || [];
-          die.userData.faces.push({ label: String(labels[i]), sub: sub, holder: parent, normal: g.n.clone() });
+          die.userData.faces.push({ label: String(labels[i]), sub: sub, holder: parent, mesh: decal, normal: g.n.clone() });
         }
       });
     }
@@ -364,11 +374,26 @@
       }
       else g.add(threeBipyramid(T, mat, edge, 1.15, ['0', '1', '2', '3', '4'], ['5', '6', '7', '8', '9'], 0.5, undefined, g)); // W10
       // Flächen-Normalen in Würfel-Raum auflösen (für Ergebnis-Ausrichtung)
+      // und Zahl-Decals fest auf die Flächen ausrichten (oben = +Y in Ruhelage),
+      // damit die Zahlen MIT dem Würfel rotieren statt zur Kamera zu billboarden.
       g.updateMatrixWorld(true);
       const q = new T.Quaternion();
+      const bx = new T.Vector3(), by = new T.Vector3(), bn = new T.Vector3();
+      const UP = new T.Vector3(0, 1, 0);
+      const bm = new T.Matrix4();
       (g.userData.faces || []).forEach(f => {
         f.holder.getWorldQuaternion(q);
         f.normal.applyQuaternion(q);
+        if (f.mesh) {
+          bn.copy(f.normal).normalize();
+          bx.crossVectors(UP, bn);
+          if (bx.length() < 1e-3) bx.set(1, 0, 0); else bx.normalize();
+          by.crossVectors(bn, bx).normalize();
+          bm.makeBasis(bx, by, bn);
+          const qDie = new T.Quaternion().setFromRotationMatrix(bm);
+          const qHolder = f.holder.getWorldQuaternion(new T.Quaternion());
+          f.mesh.quaternion.copy(qHolder.invert().multiply(qDie));
+        }
         delete f.holder;
       });
       return g;
