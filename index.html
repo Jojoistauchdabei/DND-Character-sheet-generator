@@ -28,7 +28,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 11.09.2026-12</span>
+        <span class="version-tag">BUILD 11.09.2026-13</span>
       </div>
     </div>
 
@@ -430,91 +430,134 @@
       </div>
     </div>
 
-    <!-- DM-DASHBOARD: alle Funktionen auf einer Seite, keine Unterseiten -->
+    <!-- DM-DASHBOARD: Reiter statt Endlos-Scroll, nur ein Werkzeug zur Zeit sichtbar -->
     <div class="page" id="pageDM">
-      <div class="dm-subnav">
-        <button type="button" class="mini-button" onclick="document.getElementById('dmDice').scrollIntoView({behavior:'smooth'})">🎲 Würfel</button>
-        <button type="button" class="mini-button" onclick="document.getElementById('dmCreator').scrollIntoView({behavior:'smooth'})">✨ Creator</button>
-        <button type="button" class="mini-button" onclick="document.getElementById('dmCreatures').scrollIntoView({behavior:'smooth'})">🐉 Kreaturen</button>
-        <button type="button" class="mini-button" onclick="document.getElementById('dmItems').scrollIntoView({behavior:'smooth'})">🗡️ Items</button>
-        <button type="button" class="mini-button" onclick="document.getElementById('dmFight').scrollIntoView({behavior:'smooth'})">⚖️ Kampf</button>
-        <button type="button" class="mini-button" onclick="document.getElementById('dmWiki').scrollIntoView({behavior:'smooth'})">📖 Wiki</button>
+      <div class="dm-tabs" id="dmTabs">
+        <button type="button" class="dm-tab active" data-dmtab="dmDice">🎲 Würfel</button>
+        <button type="button" class="dm-tab" data-dmtab="dmCreator">✨ Creator</button>
+        <button type="button" class="dm-tab" data-dmtab="dmCreatures">🐉 Bestiarium</button>
+        <button type="button" class="dm-tab" data-dmtab="dmItems">🗡️ Arsenal</button>
+        <button type="button" class="dm-tab" data-dmtab="dmFight">⚖️ Kampf</button>
+        <button type="button" class="dm-tab" data-dmtab="dmWiki">📖 Wiki</button>
       </div>
-      <div class="box" id="dmDice">
-        <div class="field-header"><label>🎲 3D Würfelbecher</label><span class="dm-badge">DUNGEON MASTER</span></div>
-        <div class="dice-select" id="diceSelect"></div>
-        <div class="dm-grid">
-          <div>
-            <div class="dice-stage">
-              <div id="dice3d"></div>
-              <div class="dice-scene"><div class="dice-cube" id="diceCube"></div></div>
-              <div><div class="dice-result-big" id="diceResult">20</div>
-              <div style="text-align:center;font-size:12px;" id="diceLabel">W20</div></div>
+
+      <!-- WÜRFEL -->
+      <div class="dm-panel active" id="dmDice">
+        <div class="box">
+          <div class="field-header"><label>🎲 3D Würfelbecher</label><span class="dm-badge">DUNGEON MASTER</span></div>
+          <div class="dice-select" id="diceSelect"></div>
+          <div class="dice-layout">
+            <div class="dice-main">
+              <div class="dice-stage">
+                <div class="dice-visual">
+                  <div id="dice3d"></div>
+                  <div class="dice-scene"><div class="dice-cube" id="diceCube"></div></div>
+                </div>
+                <div class="dice-readout">
+                  <div class="dice-result-big" id="diceResult">20</div>
+                  <div class="dice-result-label" id="diceLabel">W20</div>
+                </div>
+              </div>
             </div>
-            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
-              <label style="margin:0;">Modifier</label>
-              <input type="number" id="diceMod" value="0" style="width:70px;text-align:center;">
-              <label style="margin:0;">Anzahl</label>
-              <input type="number" id="diceCount" value="1" min="1" max="20" style="width:60px;text-align:center;">
-              <button type="button" onclick="rollDice3D()">🎲 Würfeln</button>
-              <button type="button" class="inactive" onclick="rollAdvantage(true)">Vorteil</button>
-              <button type="button" class="inactive" onclick="rollAdvantage(false)">Nachteil</button>
+            <div class="dice-log-col">
+              <div class="dm-subhead"><label>Wurf-Verlauf</label><button type="button" class="mini-button" onclick="clearDiceLog()">Leeren</button></div>
+              <div class="dice-log" id="diceLog"><div class="dm-empty">Noch keine Würfe.</div></div>
             </div>
           </div>
-          <div>
-            <label>Wurf-Verlauf</label>
-            <div class="dice-log" id="diceLog"><div>Noch keine Würfe.</div></div>
-            <button type="button" class="mini-button" onclick="clearDiceLog()" style="margin-top:6px;">Verlauf löschen</button>
+          <div class="dm-toolbar">
+            <div class="dm-field dm-field-sm"><label>Modifier</label><input type="number" id="diceMod" value="0"></div>
+            <div class="dm-field dm-field-sm"><label>Anzahl</label><input type="number" id="diceCount" value="1" min="1" max="20"></div>
+            <span class="dm-spacer"></span>
+            <button type="button" onclick="rollDice3D()">🎲 Würfeln</button>
+            <button type="button" class="inactive" onclick="rollAdvantage(true)">✅ Vorteil</button>
+            <button type="button" class="inactive" onclick="rollAdvantage(false)">❌ Nachteil</button>
           </div>
         </div>
       </div>
-      <div class="box" id="dmCreator">
-        <div class="field-header"><label>✨ Character Creator</label><span class="dm-badge">SCHRITT FÜR SCHRITT</span></div>
-        <div class="creator-steps" id="creatorSteps"></div>
-        <div id="creatorBody"></div>
-        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-          <button type="button" class="inactive" onclick="creatorPrev()">← Zurück</button>
-          <button type="button" onclick="creatorNext()">Weiter →</button>
-          <button type="button" class="inactive" onclick="creatorRandom()">🎲 Zufällig</button>
-          <button type="button" onclick="creatorApply()">📜 Auf Bogen übernehmen</button>
-        </div>
-        <div class="checkbox-field"><input type="checkbox" id="creatorNewSlot"><span>Als neuen Charakter anlegen (sonst wird der aktuelle überschrieben)</span></div>
-      </div>
-      <div class="box" id="dmCreatures">
-        <div class="field-header"><label>🐉 Bestiarium & Health Tracker</label><span class="dm-badge">KREATUREN</span></div>
-        <div style="display:flex;gap:8px;margin:8px 0;"><input type="text" id="creatureSearch" placeholder="Kreatur suchen (z.B. Goblin, Drache...)" oninput="renderCreatures()"></div>
-        <div class="dm-cards" id="creatureList"></div>
-      </div>
-      <div class="box" id="dmItems">
-        <div class="field-header"><label>🗡️ Arsenal & Schätze</label><span class="dm-badge">GEGENSTÄNDE</span></div>
-        <div style="display:flex;gap:8px;margin:8px 0;"><input type="text" id="itemSearch" placeholder="Gegenstand suchen..." oninput="renderItems()"></div>
-        <div class="dm-cards" id="itemList"></div>
-      </div>
-      <div id="dmFight">
-      <div class="dm-grid">
+
+      <!-- CREATOR -->
+      <div class="dm-panel" id="dmCreator">
         <div class="box">
-          <label>🛡️ Gruppe (aus deinen Charakter-Slots)</label>
-          <div id="partyList"></div>
-          <button type="button" class="mini-button" onclick="loadPartyFromSlots()">↻ Gruppe aus Slots laden</button>
+          <div class="field-header"><label>✨ Character Creator</label><span class="dm-badge">SCHRITT FÜR SCHRITT</span></div>
+          <div class="creator-steps" id="creatorSteps"></div>
+          <div id="creatorBody"></div>
+          <div class="dm-toolbar">
+            <button type="button" class="inactive" id="creatorPrevBtn" onclick="creatorPrev()">← Zurück</button>
+            <button type="button" id="creatorNextBtn" onclick="creatorNext()">Weiter →</button>
+            <span class="dm-spacer"></span>
+            <button type="button" class="inactive" onclick="creatorRandom()">🎲 Zufällig</button>
+            <button type="button" onclick="creatorApply()">📜 Auf Bogen übernehmen</button>
+          </div>
+          <div class="checkbox-field"><input type="checkbox" id="creatorNewSlot"><span>Als neuen Charakter anlegen (sonst wird der aktuelle überschrieben)</span></div>
+        </div>
+      </div>
+
+      <!-- BESTIARIUM -->
+      <div class="dm-panel" id="dmCreatures">
+        <div class="box">
+          <div class="field-header"><label>🐉 Bestiarium &amp; Health Tracker</label><span class="dm-badge">KREATUREN</span></div>
+          <div class="dm-toolbar">
+            <input type="search" class="dm-search" id="creatureSearch" placeholder="Kreatur suchen (Goblin, Drache, Skelett …)" oninput="renderCreatures()" aria-label="Kreatur suchen">
+            <span class="dm-count" id="creatureCount"></span>
+            <span class="dm-spacer"></span>
+            <button type="button" class="mini-button" onclick="resetAllHp()">↺ Alle TP zurücksetzen</button>
+          </div>
+          <div class="dm-cards" id="creatureList"></div>
+        </div>
+      </div>
+
+      <!-- ARSENAL -->
+      <div class="dm-panel" id="dmItems">
+        <div class="box">
+          <div class="field-header"><label>🗡️ Arsenal &amp; Schätze</label><span class="dm-badge">GEGENSTÄNDE</span></div>
+          <div class="dm-toolbar">
+            <input type="search" class="dm-search" id="itemSearch" placeholder="Gegenstand suchen (Langschwert, Trank, Ring …)" oninput="renderItems()" aria-label="Gegenstand suchen">
+            <span class="dm-count" id="itemCount"></span>
+          </div>
+          <div class="dm-cards" id="itemList"></div>
+        </div>
+      </div>
+
+      <!-- KAMPFPLANER -->
+      <div class="dm-panel" id="dmFight">
+        <div class="box">
+          <div class="field-header"><label>⚖️ Kampfplaner</label><span class="dm-badge">BEGEGNUNG</span></div>
+          <div class="dm-grid">
+            <div class="dm-subbox">
+              <div class="dm-subhead"><label>🛡️ Gruppe</label><button type="button" class="mini-button" onclick="loadPartyFromSlots()">↻ Aus Slots laden</button></div>
+              <div id="partyList"></div>
+            </div>
+            <div class="dm-subbox">
+              <div class="dm-subhead"><label>👹 Gegner</label><button type="button" class="mini-button" onclick="addEncounterRow()">+ Zeile</button></div>
+              <div id="encounterList"></div>
+              <p class="dm-hint">Monster einzeln aus dem Bestiarium über <b>⚖️ Kampf</b> hinzufügen.</p>
+            </div>
+          </div>
         </div>
         <div class="box">
-          <label>👹 Gegner</label>
-          <div id="encounterList"></div>
-          <button type="button" class="mini-button" onclick="addEncounterRow()">+ Gegner hinzufügen</button>
+          <div class="field-header"><label>📊 Kampf-Analyse</label><button type="button" onclick="analyzeEncounter()">Analyse starten</button></div>
+          <div class="dm-result" id="encounterResult">Gruppe laden, Gegner wählen, dann Analyse starten.</div>
+          <div class="encounter-verdict" id="encounterVerdict" style="display:none;"></div>
         </div>
       </div>
-      <div class="box">
-        <div class="field-header"><label>⚖️ Kampf-Analyse</label><button type="button" onclick="analyzeEncounter()">Analyse starten</button></div>
-        <div id="encounterResult" style="font-size:14px;margin-top:8px;">Wähle Gruppe + Gegner und starte die Analyse.</div>
-        <div class="encounter-verdict" id="encounterVerdict" style="display:none;"></div>
-      </div>
-      </div>
-      <div class="box" id="dmWiki">
-        <div class="field-header"><label>📖 Wiki von Aventuria</label><span class="dm-badge">WISSEN</span></div>
-        <div class="wiki-search"><input type="text" id="wikiSearch" placeholder="Suchen: Goblin, Langschwert, Betäubt, Stärke..." oninput="renderWikiList()"><button type="button" onclick="renderWikiList()">Suchen</button><button type="button" class="inactive" onclick="location.href='wiki.html'">📖 Extra Wiki-Seite mit Bildern öffnen</button></div>
-        <div class="dm-grid">
-          <div><label>Artikel</label><div id="wikiList"></div></div>
-          <div class="wiki-article" id="wikiArticle"><h2>Willkommen</h2><p>Wähle links einen Artikel. Alle <span class="wiki-link" onclick="openWiki('goblin')">Kreaturen</span>, <span class="wiki-link" onclick="openWiki('langschwert')">Gegenstände</span> und Regeln haben Popups mit Bildern.</p></div>
+
+      <!-- WIKI -->
+      <div class="dm-panel" id="dmWiki">
+        <div class="box">
+          <div class="field-header"><label>📖 Wiki von Aventuria</label><span class="dm-badge">WISSEN</span></div>
+          <div class="dm-toolbar">
+            <input type="search" class="dm-search" id="wikiSearch" placeholder="Suchen: Goblin, Langschwert, Betäubt, Stärke …" oninput="renderWikiList()" aria-label="Wiki durchsuchen">
+            <span class="dm-count" id="wikiCount"></span>
+            <span class="dm-spacer"></span>
+            <button type="button" class="inactive" onclick="location.href='wiki.html'">📖 Bild-Wiki öffnen</button>
+          </div>
+          <div class="dm-grid">
+            <div class="dm-col">
+              <label>Artikel</label>
+              <div class="dm-list" id="wikiList"></div>
+            </div>
+            <div class="wiki-article dm-article-pane" id="wikiArticle"><h2>Willkommen</h2><p>Wähle links einen Artikel. Alle <span class="wiki-link" onclick="openWiki('goblin')">Kreaturen</span>, <span class="wiki-link" onclick="openWiki('langschwert')">Gegenstände</span> und Regeln haben Popups.</p></div>
+          </div>
         </div>
       </div>
     </div>
