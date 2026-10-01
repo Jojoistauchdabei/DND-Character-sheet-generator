@@ -146,6 +146,26 @@
       dmHP[id]=cur; saveDmHP();
       renderCreatures();
     }
+    function resetAllHp(){
+      dmHP={}; saveDmHP();
+      renderCreatures();
+    }
+
+    /* ---- Reiter ---- */
+    const DM_TABS = ['dmDice','dmCreator','dmCreatures','dmItems','dmFight','dmWiki'];
+    let dmTab = 'dmDice';
+    function showDMTab(id, remember){
+      if(DM_TABS.indexOf(id) < 0) id = 'dmDice';
+      dmTab = id;
+      document.querySelectorAll('#pageDM .dm-tab').forEach(b => b.classList.toggle('active', b.dataset.dmtab === id));
+      document.querySelectorAll('#pageDM .dm-panel').forEach(p => p.classList.toggle('active', p.id === id));
+      if(id === 'dmDice') threeInitDice();
+      if(remember !== false) { try { localStorage.setItem('dndDM_Tab', id); } catch(e){} }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function bindDMTabs(){
+      document.querySelectorAll('#pageDM .dm-tab').forEach(b => { b.onclick = () => showDMTab(b.dataset.dmtab); });
+    }
 
     /* ---- 3D Würfel (korrekte Polyeder-Formen) ---- */
     const DICE_SHAPE = { 4:'d4', 6:'d6', 8:'d8', 10:'d10', 12:'d12', 20:'d20', 100:'d100' };
@@ -221,7 +241,7 @@
         pushDiceLog(`${isAdv?'✅ Vorteil':'❌ Nachteil'} [${a}, ${b}] = ${win}`);
       },450);
     }
-    function clearDiceLog(){ const l=document.getElementById('diceLog'); if(l) l.innerHTML='<div>Noch keine Würfe.</div>'; }
+    function clearDiceLog(){ const l=document.getElementById('diceLog'); if(l) l.innerHTML='<div class="dm-empty">Noch keine Würfe.</div>'; }
 
     /* ---- 3D Würfel-Modelle (three.js, CSS als Offline-Fallback) ---- */
     let threeDice = null;
@@ -464,6 +484,8 @@
       const now = performance.now();
       const dt = Math.min(0.05, (now - d.last) / 1000 || 0.016);
       d.last = now;
+      const panel = document.getElementById('dmDice');
+      if (panel && !panel.classList.contains('active')) return;
       const speed = Math.hypot(d.vx, d.vy, d.vz);
       if (d.settle) {
         // Ergebnisfläche weich zur Kamera drehen (Animation davor bleibt unangetastet)
@@ -492,8 +514,10 @@
       }
       d.renderer.render(d.scene, d.camera);
     }
+    let threeInitStarted = false;
     function threeInitDice(){
-      if (threeDice || !document.getElementById('dice3d')) return;
+      if (threeInitStarted || !document.getElementById('dice3d')) return;
+      threeInitStarted = true;
       ensureThree().then(() => {
         try {
           const T = window.THREE;
@@ -502,6 +526,7 @@
           const renderer = new T.WebGLRenderer({ alpha: true, antialias: true });
           renderer.setSize(W, H);
           renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+          mount.innerHTML = '';
           mount.appendChild(renderer.domElement);
           const scene = new T.Scene();
           const camera = new T.PerspectiveCamera(38, W / H, 0.1, 100);
@@ -565,6 +590,10 @@
         d.onclick=()=>{ creatorState.step=i; renderCreator(); };
         dots.appendChild(d);
       });
+      const prevBtn=document.getElementById('creatorPrevBtn');
+      const nextBtn=document.getElementById('creatorNextBtn');
+      if(prevBtn) prevBtn.disabled = creatorState.step === 0;
+      if(nextBtn) nextBtn.disabled = creatorState.step === CREATOR_TITLES.length - 1;
       const s=creatorState;
       if(s.step===0){
         body.innerHTML='<label>Volk wählen</label><div class="pick-grid">'+CREATOR_VOLK.map(v=>`<div class="pick-card ${s.volk===v.n?'selected':''}" onclick="creatorPickVolk('${v.n}')"><b>${v.n}</b><span>${v.b}<br>${v.d}</span></div>`).join('')+'</div>';
@@ -573,13 +602,13 @@
       } else if(s.step===2){
         const rows=Object.keys(s.attrs).map(k=>{
           const m=Math.floor((s.attrs[k]-10)/2);
-          return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-light);"><b style="min-width:40px;font-family:Cinzel,serif;color:var(--accent);">${k}</b><button type="button" class="mini-button" onclick="creatorAttr('${k}',-1)">−</button><span style="min-width:60px;text-align:center;font-weight:bold;">${s.attrs[k]} (${m>=0?'+':''}${m})</span><button type="button" class="mini-button" onclick="creatorAttr('${k}',1)">+</button></div>`;
+          return `<div class="attr-row"><span class="attr-key">${k}</span><button type="button" class="mini-button" onclick="creatorAttr('${k}',-1)">−</button><span class="attr-val">${s.attrs[k]} (${m>=0?'+':''}${m})</span><button type="button" class="mini-button" onclick="creatorAttr('${k}',1)">+</button></div>`;
         }).join('');
-        body.innerHTML=`<label>Attribute (Klick +/- oder Würfeln)</label>${rows}<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"><button type="button" class="mini-button" onclick="creatorRollAttrs()">🎲 4W6 (niedrigster weg)</button><button type="button" class="mini-button" onclick="creatorStandardArray()">Standard-Array</button></div>`;
+        body.innerHTML=`<label>Werte setzen oder 4W6 würfeln</label><div class="attr-list">${rows}</div><div class="dm-toolbar"><button type="button" class="mini-button" onclick="creatorRollAttrs()">🎲 4W6 (niedrigster weg)</button><button type="button" class="mini-button" onclick="creatorStandardArray()">Standard-Array</button></div>`;
       } else if(s.step===3){
         body.innerHTML=`<div class="grid2"><div><label>Charaktername</label><input type="text" id="creatorName" value="${s.name}" oninput="creatorState.name=this.value"></div><div><label>Hintergrund</label><input type="text" id="creatorHintergrund" value="${s.hintergrund}" oninput="creatorState.hintergrund=this.value"></div></div><div style="margin-top:8px;"><label>Gesinnung</label><select id="creatorGesinnung" onchange="creatorState.gesinnung=this.value">${['Rechtschaffen Gut','Neutral Gut','Chaotisch Gut','Rechtschaffen Neutral','Neutral','Chaotisch Neutral','Rechtschaffen Böse','Neutral Böse','Chaotisch Böse'].map(g=>`<option ${s.gesinnung===g?'selected':''}>${g}</option>`).join('')}</select></div><p style="font-size:13px;margin-top:8px;">Volk: <b>${s.volk}</b> • Klasse: <b>${s.klasse}</b></p>`;
       } else {
-        body.innerHTML=`<h3 style="font-family:Cinzel,serif;color:var(--accent);">Bereit!</h3><p><b>${s.name||'(namenlos)'}</b> – ${s.volk} ${s.klasse} (${s.hintergrund}, ${s.gesinnung})</p><p style="font-size:13px;">STR ${s.attrs.STR} • GES ${s.attrs.GES} • KON ${s.attrs.KON} • INT ${s.attrs.INT} • WEI ${s.attrs.WEI} • CHA ${s.attrs.CHA}</p><p style="font-size:12px;">Klicke „Auf Bogen übernehmen". Mit Checkbox oben wird ein neuer Slot angelegt.</p>`;
+        body.innerHTML=`<div class="dm-card"><h3 style="font-size:16px;">✨ Bereit!</h3><div class="text"><b>${s.name||'(namenlos)'}</b> – ${s.volk} ${s.klasse}<br><span class="sub">${s.hintergrund} • ${s.gesinnung}</span></div><div class="stat-row">${Object.keys(s.attrs).map(k=>`<span class="dm-chip">${k} ${s.attrs[k]}</span>`).join('')}</div><div class="text sub">„Auf Bogen übernehmen" schreibt die Werte auf den Charakterbogen. Mit der Checkbox darunter wird ein neuer Slot angelegt.</div></div>`;
       }
     }
     function creatorPickVolk(n){ creatorState.volk=n; renderCreator(); }
@@ -626,36 +655,50 @@
       const box=document.getElementById('creatureList');
       if(!box) return;
       const q=(document.getElementById('creatureSearch')?.value||'').toLowerCase();
+      const list=CREATURES.filter(c=>(c.name+c.desc).toLowerCase().includes(q));
+      const cnt=document.getElementById('creatureCount');
+      if(cnt) cnt.textContent = list.length ? `${list.length} von ${CREATURES.length} Kreaturen` : 'Keine Treffer';
       box.innerHTML='';
-      CREATURES.filter(c=>(c.name+c.desc).toLowerCase().includes(q)).forEach(c=>{
+      list.forEach(c=>{
         const cur=hpOf(c.id,c.hp);
         const pct=Math.round(100*cur/c.hp);
         const card=document.createElement('div');
         card.className='dm-card';
-        card.innerHTML=`<h3>${c.emoji} ${c.name}</h3><div class="sub">HG ${c.cr} • ${c.xp} XP • RK ${c.ac} • ${c.speed}</div><div class="stat-row"><span class="dm-chip">STR ${c.str}</span><span class="dm-chip">GES ${c.dex??c.str}</span><span class="dm-chip">TP ${cur}/${c.hp}</span></div><div style="font-size:13px;">${c.desc}<br><i>${c.trait}</i></div><div class="hp-tracker"><button type="button" onclick="dmgHeal('${c.id}',${c.hp},-1)">−1</button><button type="button" onclick="dmgHeal('${c.id}',${c.hp},-5)">−5</button><div class="hp-val">${cur}/${c.hp}</div><button type="button" onclick="dmgHeal('${c.id}',${c.hp},1)">+1</button><button type="button" onclick="dmgHeal('${c.id}',${c.hp},${c.hp})">Reset</button></div><div class="hp-bar"><div style="width:${pct}%"></div></div><div style="display:flex;gap:6px;margin-top:6px;"><button type="button" class="mini-button" onclick="openWiki('${c.id}')">📖 Wiki</button><button type="button" class="mini-button" onclick="addMonsterToEncounter('${c.id}')">⚖️ Zum Kampf</button></div>`;
+        card.innerHTML=`<div class="dm-card-head"><span class="emoji">${c.emoji}</span><div><h3>${c.name}</h3><div class="sub">HG ${c.cr} · ${c.xp} XP · RK ${c.ac} · ${c.speed}</div></div></div><div class="stat-row"><span class="dm-chip">STR ${c.str}</span><span class="dm-chip">GES ${c.dex??c.str}</span></div><div class="text">${c.desc}<br><i class="sub">${c.trait}</i></div><div class="hp-tracker"><button type="button" onclick="dmgHeal('${c.id}',${c.hp},-5)">−5</button><button type="button" onclick="dmgHeal('${c.id}',${c.hp},-1)">−1</button><span class="hp-val">${cur}/${c.hp}</span><button type="button" onclick="dmgHeal('${c.id}',${c.hp},1)">+1</button><button type="button" onclick="dmgHeal('${c.id}',${c.hp},5)">+5</button></div><div class="hp-bar"><div style="width:${pct}%"></div></div><div class="dm-card-actions"><button type="button" class="mini-button" onclick="dmgHeal('${c.id}',${c.hp},${c.hp})">↺ Reset</button><button type="button" class="mini-button" onclick="openWiki('${c.id}')">📖 Wiki</button><button type="button" class="mini-button" onclick="addMonsterToEncounter('${c.id}')">⚖️ Kampf</button></div>`;
         box.appendChild(card);
       });
-      if(!box.children.length) box.innerHTML='<p>Keine Kreatur gefunden.</p>';
+      if(!list.length) box.innerHTML='<p class="dm-empty">Keine Kreatur gefunden. Suchbegriff zurücksetzen?</p>';
     }
     function renderItems(){
       const box=document.getElementById('itemList');
       if(!box) return;
       const q=(document.getElementById('itemSearch')?.value||'').toLowerCase();
+      const list=ITEMS.filter(c=>(c.name+c.desc+c.rarity).toLowerCase().includes(q));
+      const cnt=document.getElementById('itemCount');
+      if(cnt) cnt.textContent = list.length ? `${list.length} von ${ITEMS.length} Gegenständen` : 'Keine Treffer';
       box.innerHTML='';
-      ITEMS.filter(c=>(c.name+c.desc+c.rarity).toLowerCase().includes(q)).forEach(c=>{
+      list.forEach(c=>{
         const card=document.createElement('div');
         card.className='dm-card';
-        card.innerHTML=`<div class="emoji-big">${c.emoji}</div><h3>${c.name}</h3><div class="sub">${c.type} • ${c.rarity} • ${c.price}</div><div style="font-size:13px;">${c.desc}</div><div style="display:flex;gap:6px;margin-top:8px;"><button type="button" class="mini-button" onclick="openWiki('${c.id}')">📖 Wiki</button><button type="button" class="mini-button" onclick="giveItemToChar('${c.name.replace(/'/g,"")}')">➕ Aufs Inventar</button></div>`;
+        card.innerHTML=`<div class="dm-card-head"><span class="emoji">${c.emoji}</span><div><h3>${c.name}</h3><div class="sub">${c.type} · ${c.rarity}</div></div><span class="dm-chip">${c.price}</span></div><div class="text">${c.desc}</div><div class="dm-card-actions"><button type="button" class="mini-button" onclick="openWiki('${c.id}')">📖 Wiki</button><button type="button" class="mini-button" onclick="giveItemToChar('${c.name.replace(/'/g,"")}')">➕ Aufs Inventar</button></div>`;
         box.appendChild(card);
       });
-      if(!box.children.length) box.innerHTML='<p>Kein Gegenstand gefunden.</p>';
+      if(!list.length) box.innerHTML='<p class="dm-empty">Kein Gegenstand gefunden. Suchbegriff zurücksetzen?</p>';
     }
     function giveItemToChar(name){
-      for(let i=0;i<18;i++){
-        const el=document.getElementById('inv-name-'+i);
-        if(el && !el.value){ el.value=name; const anz=document.getElementById('inv-anz-'+i); if(anz&&!anz.value) anz.value=1; save(); showPage(4); alert('➕ „'+name+'“ ins Inventar gelegt (Zeile '+(i+1)+').'); return; }
+      let i=firstFreeInvRow();
+      if(i<0){
+        const vorher=invRowCount;
+        ensureInvRows(invRowCount+1);
+        if(invRowCount>vorher) i=firstFreeInvRow();
       }
-      showPage(4); alert('Inventar voll – bitte selbst eintragen: '+name);
+      if(i<0){ showPage(4); alert('Inventar voll (max. '+INV_MAX_ROWS+' Zeilen) – bitte selbst eintragen: '+name); return; }
+      const el=document.getElementById('inv-name-'+i);
+      el.value=name;
+      const anz=document.getElementById('inv-anz-'+i);
+      if(anz&&!anz.value) anz.value=1;
+      syncInvRows();
+      save(); showPage(4); alert('➕ „'+name+'“ ins Inventar gelegt (Zeile '+(i+1)+').');
     }
 
     /* ---- Kampfplaner ---- */
@@ -666,14 +709,14 @@
       if(!box) return;
       box.innerHTML='';
       const idx=getSlotIndex();
-      if(!idx.length){ box.innerHTML='<p>Keine Charaktere.</p>'; return; }
+      if(!idx.length){ box.innerHTML='<p class="dm-empty">Noch keine Charaktere angelegt.</p>'; return; }
       idx.forEach(s=>{
         let d={}; try{ d=JSON.parse(readSlotRaw(s.id)||'{}'); }catch(e){}
         const lvl=Math.max(1,Math.min(20,parseInt(d.stufe)||1));
         const nm=d.charaktername||s.name||'(unbenannt)';
-        const row=document.createElement('div');
-        row.style.cssText='display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border-light);font-size:13px;';
-        row.innerHTML=`<input type="checkbox" checked data-plvl="${lvl}" data-pname="${nm.replace(/"/g,'')}"><span style="flex:1;"><b>${nm}</b> – Stufe ${lvl}</span><span class="dm-chip">TP ${d.tpmax||'?'}</span>`;
+        const row=document.createElement('label');
+        row.className='dm-row';
+        row.innerHTML=`<input type="checkbox" checked data-plvl="${lvl}"><span class="dm-row-name"><b>${nm}</b> · Stufe ${lvl}</span><span class="dm-chip">TP ${d.tpmax||'?'}</span>`;
         box.appendChild(row);
       });
     }
@@ -687,9 +730,9 @@
       box.innerHTML='';
       encounterRows.forEach((r,i)=>{
         const div=document.createElement('div');
-        div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+        div.className='dm-row';
         const opts=CREATURES.map(c=>`<option value="${c.id}" ${c.id===r.id?'selected':''}>${c.emoji} ${c.name} (HG ${c.cr})</option>`).join('');
-        div.innerHTML=`<select data-eidx="${i}" class="enc-mon" style="flex:1;">${opts}</select><div class="count-stepper"><button type="button" onclick="encCount(${i},-1)">−</button><span id="enc-count-${i}">${r.count}x</span><button type="button" onclick="encCount(${i},1)">+</button></div><button type="button" class="mini-button" onclick="encRemove(${i})">✕</button>`;
+        div.innerHTML=`<select data-eidx="${i}" class="enc-mon" aria-label="Gegner ${i+1}">${opts}</select><div class="count-stepper"><button type="button" onclick="encCount(${i},-1)" aria-label="Weniger">−</button><span id="enc-count-${i}">${r.count}×</span><button type="button" onclick="encCount(${i},1)" aria-label="Mehr">+</button></div><button type="button" class="mini-button" onclick="encRemove(${i})" aria-label="Zeile entfernen">✕</button>`;
         box.appendChild(div);
       });
       box.querySelectorAll('.enc-mon').forEach(sel=>{
@@ -698,12 +741,16 @@
     }
     function encCount(i,d){ encounterRows[i].count=Math.max(1,Math.min(30,encounterRows[i].count+d)); renderEncounterRows(); }
     function encRemove(i){ encounterRows.splice(i,1); if(!encounterRows.length) encounterRows.push({id:'goblin',count:1}); renderEncounterRows(); }
-    function addMonsterToEncounter(id){ encounterRows.push({id:id,count:1}); showPage('DM'); renderEncounterRows(); setTimeout(()=>document.getElementById('dmFight')?.scrollIntoView({behavior:'smooth'}), 80); }
+    function addMonsterToEncounter(id){
+      encounterRows.push({id:id,count:1});
+      renderEncounterRows();
+      showPage('DM'); showDMTab('dmFight');
+    }
     function analyzeEncounter(){
       const partyChecks=[...document.querySelectorAll('#partyList input[type=checkbox]:checked')];
       const res=document.getElementById('encounterResult');
       const verdict=document.getElementById('encounterVerdict');
-      if(!partyChecks.length){ res.textContent='Bitte mindestens einen Charakter in der Gruppe anhaken.'; return; }
+      if(!partyChecks.length){ if(res) res.innerHTML='<span class="dm-empty">Bitte mindestens einen Charakter in der Gruppe anhaken.</span>'; if(verdict) verdict.style.display='none'; return; }
       const lvls=partyChecks.map(c=>parseInt(c.dataset.plvl)||1);
       const n=lvls.length;
       let easy=0,med=0,hard=0,dead=0;
@@ -718,28 +765,36 @@
       else if(adj>=med){ diff='Mittel 🛡️'; color='#5c7a3a'; advice='Gute Standard-Herausforderung. Ressourcen werden verbraucht.'; }
       else if(adj>=easy){ diff='Leicht 🌿'; color='#5c7a3a'; advice='Zum Aufwärmen. Passt für erschöpfte Gruppen.'; }
       const avgLvl=(lvls.reduce((a,b)=>a+b,0)/n).toFixed(1);
-      res.innerHTML=`Gruppe: <b>${n} Charaktere, Ø Stufe ${avgLvl}</b><br>Monster-XP: <b>${totalXP}</b> × Multiplikator ${mult} (Anzahl ${count}) = <b>${adj} adj. XP</b><br>Schwellen: Leicht ${easy} / Mittel ${med} / Schwer ${hard} / Tödlich ${dead}`;
-      verdict.style.display='block';
-      verdict.style.borderColor=color;
-      verdict.style.color=color;
-      verdict.textContent=`${diff} – ${advice}`;
+      if(res) res.innerHTML=`<div class="dm-card dm-card-plain"><div class="stat-row"><span class="dm-chip">Gruppe: ${n}</span><span class="dm-chip">Ø Stufe ${avgLvl}</span><span class="dm-chip">Gegner: ${count}</span><span class="dm-chip">Multiplikator ×${mult}</span></div><div class="text">Monster-XP <b>${totalXP}</b> × ${mult} = <b>${adj}</b> angepasste XP</div><div class="stat-row"><span class="dm-chip">Leicht ab ${easy}</span><span class="dm-chip">Mittel ab ${med}</span><span class="dm-chip">Schwer ab ${hard}</span><span class="dm-chip">Tödlich ab ${dead}</span></div></div>`;
+      if(verdict){
+        verdict.style.display='block';
+        verdict.style.borderColor=color;
+        verdict.style.color=color;
+        verdict.innerHTML=`<div>${diff}</div><div class="advice">${advice}</div>`;
+      }
     }
 
     /* ---- Wiki ---- */
+    let wikiCurrent = '';
     function wikiEntry(key){ return WIKI[key] || null; }
     function renderWikiList(){
       const box=document.getElementById('wikiList');
       if(!box) return;
       const q=(document.getElementById('wikiSearch')?.value||'').toLowerCase();
+      const keys=Object.keys(WIKI).filter(k=>(WIKI[k].t+WIKI[k].body).toLowerCase().includes(q));
+      const cnt=document.getElementById('wikiCount');
+      if(cnt) cnt.textContent = keys.length ? `${keys.length} Artikel` : 'Keine Treffer';
       box.innerHTML='';
-      Object.keys(WIKI).filter(k=>(WIKI[k].t+WIKI[k].body).toLowerCase().includes(q)).forEach(k=>{
+      keys.forEach(k=>{
         const e=WIKI[k];
         const d=document.createElement('div');
-        d.className='skill-item';
-        d.innerHTML=`<div style="font-size:20px;margin-right:8px;">${e.img}</div><div class="skill-name"><b>${e.t}</b></div>`;
+        d.className='dm-list-item'+(k===wikiCurrent?' active':'');
+        d.dataset.key=k;
+        d.innerHTML=`<span class="dm-list-emoji">${e.img}</span><span class="dm-list-title">${e.t}</span>`;
         d.onclick=()=>showWikiArticle(k);
         box.appendChild(d);
       });
+      if(!keys.length) box.innerHTML='<p class="dm-empty">Kein Artikel gefunden.</p>';
     }
     function wikiHtml(key){
       const e=wikiEntry(key);
@@ -754,8 +809,12 @@
       return `<h2>${e.img} ${e.t}</h2>${extra}<p style="font-size:14px;line-height:1.5;">${e.body}</p>${links?`<p style="font-size:12px;margin-top:8px;">Siehe auch: ${links}</p>`:''}`;
     }
     function showWikiArticle(key){
+      wikiCurrent = key;
       const a=document.getElementById('wikiArticle');
       if(a) a.innerHTML=wikiHtml(key);
+      document.querySelectorAll('#wikiList .dm-list-item').forEach(el=>{
+        el.classList.toggle('active', el.dataset.key === key);
+      });
     }
     function openWiki(key){
       const t=document.getElementById('wikiPopupTitle');
@@ -779,10 +838,14 @@
     function initDM(){
       if(!dmInitDone){
         dmInitDone=true;
+        bindDMTabs();
         renderDiceSelect(); buildDiceCube(20,null);
         renderCreator(); renderCreatures(); renderItems();
         loadPartyFromSlots(); renderEncounterRows(); renderWikiList();
         showWikiArticle('goblin');
+        let saved='dmDice';
+        try{ saved=localStorage.getItem('dndDM_Tab')||'dmDice'; }catch(e){}
+        showDMTab(saved, false);
         threeInitDice();
       }
     }

@@ -1,4 +1,81 @@
 /* sheet – aus index.html ausgelagert, Verhalten unveraendert. */
+
+    /* Inventar-Zeilen wachsen mit: sobald eine Zeile belegt ist, hängt unten
+       automatisch eine neue leere Zeile an (bis maximal INV_MAX_ROWS). */
+    const INV_MIN_ROWS = 10;
+    const INV_MAX_ROWS = 60;
+    let invRowCount = 0;
+
+    function invFieldFilled(el) {
+      return !!el && String(el.value).trim() !== '';
+    }
+
+    function invRowFilled(i) {
+      return invFieldFilled(document.getElementById('inv-name-' + i))
+        || invFieldFilled(document.getElementById('inv-anz-' + i))
+        || invFieldFilled(document.getElementById('inv-gew-' + i));
+    }
+
+    function appendInvRow(i) {
+      const invList = document.getElementById('inventar-list');
+      if (!invList) return;
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--border-light)';
+      tr.innerHTML = `
+          <td style="padding: 2px;"><input type="text" id="inv-name-${i}" onchange="save()" style="border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); width: 100%;"></td>
+          <td style="padding: 2px; text-align: center; width: 40px;"><input type="number" id="inv-anz-${i}" min="0" onchange="save()" style="width: 100%; border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); text-align: center;"></td>
+          <td style="padding: 2px; text-align: center; width: 70px;">
+            <div class="weight-field">
+              <input type="number" id="inv-gew-${i}" step="0.1" min="0" onchange="save()" style="width: 100%; border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); text-align: center;">
+            </div>
+          </td>
+        `;
+      invList.appendChild(tr);
+      invRowCount++;
+    }
+
+    function ensureInvRows(count) {
+      const target = Math.max(INV_MIN_ROWS, Math.min(INV_MAX_ROWS, count));
+      while (invRowCount < target) appendInvRow(invRowCount);
+    }
+
+    function setInvRowCount(count) {
+      const invList = document.getElementById('inventar-list');
+      if (!invList) return;
+      const target = Math.max(INV_MIN_ROWS, Math.min(INV_MAX_ROWS, count));
+      while (invRowCount > target && invList.lastElementChild) {
+        invList.removeChild(invList.lastElementChild);
+        invRowCount--;
+      }
+      while (invRowCount < target) appendInvRow(invRowCount);
+    }
+
+    function syncInvRows() {
+      for (let i = invRowCount - 1; i >= 0; i--) {
+        if (invRowFilled(i)) { ensureInvRows(i + 2); return; }
+      }
+      ensureInvRows(INV_MIN_ROWS);
+    }
+
+    function ensureInvRowsForData(data) {
+      for (let i = INV_MAX_ROWS - 1; i >= 0; i--) {
+        const belegt = ['inv-name-' + i, 'inv-anz-' + i, 'inv-gew-' + i].some(k => {
+          const v = data[k];
+          return v !== undefined && v !== null && String(v).trim() !== '';
+        });
+        if (belegt) { ensureInvRows(i + 2); return; }
+      }
+      ensureInvRows(INV_MIN_ROWS);
+    }
+
+    function firstFreeInvRow() {
+      for (let i = 0; i < invRowCount; i++) {
+        const el = document.getElementById('inv-name-' + i);
+        if (el && !invFieldFilled(el)) return i;
+      }
+      return -1;
+    }
+
     function init() {
       const nav = document.getElementById('nav');
       const pages = [
@@ -50,20 +127,8 @@
       });
 
       const invList = document.getElementById('inventar-list');
-      for (let i = 0; i < 18; i++) {
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid var(--border-light)';
-        tr.innerHTML = `
-          <td style="padding: 2px;"><input type="text" id="inv-name-${i}" onchange="save()" style="border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); width: 100%;"></td>
-          <td style="padding: 2px; text-align: center; width: 40px;"><input type="number" id="inv-anz-${i}" min="0" onchange="save()" style="width: 100%; border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); text-align: center;"></td>
-          <td style="padding: 2px; text-align: center; width: 70px;">
-            <div class="weight-field">
-              <input type="number" id="inv-gew-${i}" step="0.1" min="0" onchange="save()" style="width: 100%; border: none; background: var(--field-bg); border-bottom: 1px solid var(--border); text-align: center;">
-            </div>
-          </td>
-        `;
-        invList.appendChild(tr);
-      }
+      setInvRowCount(INV_MIN_ROWS);
+      if (invList) invList.addEventListener('input', syncInvRows);
 
       attachDatalist('klasse', klassen);
       attachDatalist('volk', völker);
@@ -145,6 +210,7 @@
       }
       setAussehenBild('');
       setKarteBild('');
+      ensureInvRowsForData(data);
       Object.keys(data).forEach(key => {
         if (key === 'skillProfs' || key === 'charSlots') return;
         if (key === 'aussehenBild') {
@@ -278,6 +344,7 @@
       resetForm();
       updateCalcs();
       renderSlotOptions();
+      notifySyncChange(id);
       document.getElementById('charaktername').focus();
     }
 
@@ -287,6 +354,7 @@
       if (!window.confirm('Diesen Charakter wirklich löschen?')) return;
       const id = getActiveSlotId();
       localStorage.removeItem(slotKeyOf(id));
+      if (window.__convexSync) window.__convexSync.onLocalDelete(id);
       const rest = idx.filter(s => s.id !== id);
       setSlotIndex(rest);
       if (rest.length === 0) {
@@ -312,6 +380,7 @@
       });
       setAussehenBild('');
       setKarteBild('');
+      setInvRowCount(INV_MIN_ROWS);
       skillProfs = normalizeSkillProfs();
       document.getElementById('inspiration-box').classList.remove('active');
     }
@@ -403,6 +472,7 @@
       } catch (err) {
         recoverAndRetrySave(id, data, err);
       }
+      notifySyncChange(id);
     }
 
     function load() {
@@ -632,6 +702,23 @@
       const box = document.getElementById('inspiration-box');
       box.classList.toggle('active');
       save();
+    }
+
+    /* ---- Sync-Anbindung (convex.js) --------------------------------------
+     * Die Brücke nach außen: convex.js läuft als ES-Modul und sieht weder die
+     * `const`-Schlüssel hier noch Funktionen, die nicht explizit am `window`
+     * hängen. Statt Schlüssel zu duplizieren, wird alles benannte übergeben.
+     */
+    window.__dndLocal = {
+      SLOT_PREFIX, SLOT_INDEX_KEY, SLOT_ACTIVE_KEY,
+      readSlotRaw, writeSlot, getSlotIndex, setSlotIndex,
+      getActiveSlotId, renderSlotOptions, load,
+    };
+
+    /* Meldet eine lokale Änderung an das Sync-Modul. Ohne Anmeldung ist
+     * __convexSync nicht belegt – die App bleibt dann rein lokal. */
+    function notifySyncChange(id) {
+      if (window.__convexSync && id) window.__convexSync.onLocalChange(id);
     }
 
     

@@ -1,5 +1,5 @@
 /* D&D Charakterbogen – Service Worker (App-Shell offline). */
-const CACHE = 'dnd-char-v13';
+const CACHE = 'dnd-char-v16';
 const ASSETS = [
   './',
   'index.html',
@@ -7,7 +7,9 @@ const ASSETS = [
   'manifest.webmanifest',
   'css/styles.css',
   'js/data.js',
+  'js/config.js',
   'js/sheet.js',
+  'js/convex.js',
   'js/editor.js',
   'js/pdf.js',
   'js/dm.js',
@@ -16,6 +18,12 @@ const ASSETS = [
   'icons/icon-512.png',
   'altes_Papier.png'
 ];
+
+/* Dateien, die vor der Cache-Version aktualisiert werden müssen. config.js
+   enthält Deployment-URL und Client-ID und wird beim Einrichten einmal
+   ausgefüllt – ein gecachter Leerstand fällt sonst lange nicht auf.
+   Netz zuerst, Cache als Rückfall für den Offline-Betrieb. */
+const NETWORK_FIRST = new Set(['js/config.js']);
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -33,7 +41,22 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  if (new URL(e.request.url).origin !== location.origin) return;
+  const url = new URL(e.request.url);
+  if (url.origin !== location.origin) return;
+
+  if (NETWORK_FIRST.has(url.pathname.split('/').pop())) {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then((hit) => {
       if (hit) return hit;

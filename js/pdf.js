@@ -71,6 +71,18 @@
         if (!window.PDFLib) throw new Error('PDF-Lib konnte nicht geladen werden.');
         const data = collectData();
         const json = JSON.stringify(data);
+        /* Inventarzeilen sind beliebig viele – gefüllte Zeilen bestimmen die Seitenzahl. */
+        const invEntries = [];
+        for (let i = 0; i < INV_MAX_ROWS; i++) {
+          const name = data[`inv-name-${i}`] || '';
+          const anz = data[`inv-anz-${i}`] || '';
+          const gew = data[`inv-gew-${i}`] || '';
+          if (String(name).trim() || String(anz).trim() || String(gew).trim()) invEntries.push({ name, anz, gew });
+        }
+        const invRowHeight = 14;
+        const invRowsPerPage = Math.floor((520 - 24) / invRowHeight);
+        const invPageCount = Math.max(1, Math.ceil(invEntries.length / invRowsPerPage));
+        const totalPages = 4 + invPageCount;
         const { PDFDocument, StandardFonts, rgb } = PDFLib;
         const pdfDoc = await PDFDocument.create();
         const standardFonts = StandardFonts || {};
@@ -200,7 +212,7 @@
         page.drawRectangle({ x: margin - 10, y: margin - 10, width: contentW + 20, height: pageSize[1] - (margin - 10) * 2, borderColor: colors.border, borderWidth: 1 });
         page.drawRectangle({ x: margin - 5, y: margin - 5, width: contentW + 10, height: pageSize[1] - (margin - 5) * 2, borderColor: colors.accent, borderWidth: 1 });
         drawTextTop(page, title, margin, 24, 12, fontBold, colors.accent);
-        drawTextTop(page, `Seite ${pageNum}/5`, pageSize[0] - margin - 60, 24, 9, fontBold, colors.accent);
+        drawTextTop(page, `Seite ${pageNum}/${totalPages}`, pageSize[0] - margin - 60, 24, 9, fontBold, colors.accent);
       };
 
       const attrs = {
@@ -429,28 +441,33 @@
       drawSpellList2('Stufe 5', 'zauber-5-', 12, margin, y + 260);
       drawSpellList2('Stufe 6', 'zauber-6-', 12, margin + spellW2 + gap, y + 260);
 
-      const p4 = pdfDoc.addPage(pageSize);
-      drawPageFrame(p4, 'Inventar', 5);
-      y = 56;
-      drawSectionTitle(p4, 'Inventar', y);
-      y += 16;
+      const invTop = 56 + 16;
       const tableH = 520;
-      p4.drawRectangle({ x: margin, y: yFromTop(p4, y) - tableH, width: contentW, height: tableH, borderColor: colors.border, borderWidth: 1, color: colors.panel });
-      drawTextTop(p4, 'Gegenstand', margin + 6, y + 4, 9, fontBold, colors.accent);
-      drawTextTop(p4, 'Anz.', margin + contentW - 120, y + 4, 9, fontBold, colors.accent);
-      drawTextTop(p4, 'Gew. (kg)', margin + contentW - 60, y + 4, 9, fontBold, colors.accent);
-      const rowHeight = 14;
-      for (let i = 0; i < 18; i++) {
-        const rowY = y + 20 + i * rowHeight;
-        const name = data[`inv-name-${i}`] || '';
-        const anz = data[`inv-anz-${i}`] || '';
-        const gew = data[`inv-gew-${i}`] || '';
-        drawTextTop(p4, fitText(name, contentW - 150, 9, font) || '-', margin + 6, rowY, 9, font, colors.ink);
-        drawTextTop(p4, String(anz || '-'), margin + contentW - 115, rowY, 9, font, colors.ink);
-        drawTextTop(p4, String(gew || '-'), margin + contentW - 60, rowY, 9, font, colors.ink);
-      }
+      const chunks = [];
+      for (let i = 0; i < invEntries.length; i += invRowsPerPage) chunks.push(invEntries.slice(i, i + invRowsPerPage));
+      if (chunks.length === 0) chunks.push([]);
 
-      y += tableH + 24;
+      let lastInvPage = null;
+      chunks.forEach((rows, ci) => {
+        const page = pdfDoc.addPage(pageSize);
+        lastInvPage = page;
+        drawPageFrame(page, 'Inventar', 5 + ci);
+        const yTop = invTop;
+        drawSectionTitle(page, ci === 0 ? 'Inventar' : 'Inventar (Fortsetzung)', yTop);
+        page.drawRectangle({ x: margin, y: yFromTop(page, yTop) - tableH, width: contentW, height: tableH, borderColor: colors.border, borderWidth: 1, color: colors.panel });
+        drawTextTop(page, 'Gegenstand', margin + 6, yTop + 4, 9, fontBold, colors.accent);
+        drawTextTop(page, 'Anz.', margin + contentW - 120, yTop + 4, 9, fontBold, colors.accent);
+        drawTextTop(page, 'Gew. (kg)', margin + contentW - 60, yTop + 4, 9, fontBold, colors.accent);
+        rows.forEach((entry, ri) => {
+          const rowY = yTop + 20 + ri * invRowHeight;
+          drawTextTop(page, fitText(entry.name, contentW - 150, 9, font) || '-', margin + 6, rowY, 9, font, colors.ink);
+          drawTextTop(page, String(entry.anz || '-'), margin + contentW - 115, rowY, 9, font, colors.ink);
+          drawTextTop(page, String(entry.gew || '-'), margin + contentW - 60, rowY, 9, font, colors.ink);
+        });
+      });
+
+      const p4 = lastInvPage;
+      y = invTop + tableH + 24;
       drawSectionTitle(p4, 'Waehrung', y);
       y += 16;
       const coinW = (contentW - gap * 3) / 4;
