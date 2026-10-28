@@ -139,7 +139,7 @@
     let dmHP = {};
     try { dmHP = JSON.parse(localStorage.getItem('dndDM_HP') || '{}'); } catch(e){ dmHP = {}; }
     function saveDmHP(){ try{ localStorage.setItem('dndDM_HP', JSON.stringify(dmHP)); }catch(e){} }
-    function hpOf(id, max){ if(dmHP[id]==null) dmHP[id]=max; return dmHP[id]; }
+     function hpOf(id, max){ if(dmHP[id]==null || dmHP[id] > max || dmHP[id] < 0) dmHP[id]=max; return dmHP[id]; }
     function dmgHeal(id, max, delta){
       let cur = hpOf(id, max);
       cur = Math.max(0, Math.min(max, cur + delta));
@@ -693,10 +693,11 @@
         if(invRowCount>vorher) i=firstFreeInvRow();
       }
       if(i<0){ showPage(4); alert('Inventar voll (max. '+INV_MAX_ROWS+' Zeilen) – bitte selbst eintragen: '+name); return; }
-      const el=document.getElementById('inv-name-'+i);
-      el.value=name;
-      const anz=document.getElementById('inv-anz-'+i);
-      if(anz&&!anz.value) anz.value=1;
+       const el=document.getElementById('inv-name-'+i);
+       if(!el) { showPage(4); alert('Inventar voll (max. '+INV_MAX_ROWS+' Zeilen) – bitte selbst eintragen: '+name); return; }
+       el.value=name;
+       const anz=document.getElementById('inv-anz-'+i);
+       if(anz&&!anz.value) anz.value=1;
       syncInvRows();
       save(); showPage(4); alert('➕ „'+name+'“ ins Inventar gelegt (Zeile '+(i+1)+').');
     }

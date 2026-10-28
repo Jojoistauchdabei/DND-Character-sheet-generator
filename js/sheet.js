@@ -204,8 +204,9 @@
       return data;
     }
 
-    function applyData(data) {
-      if (data.skillProfs) {
+     function applyData(data) {
+       if (!data || typeof data !== 'object') return;
+       if (data.skillProfs) {
         skillProfs = normalizeSkillProfs(data.skillProfs);
       }
       setAussehenBild('');
@@ -254,11 +255,15 @@
     function newSlotId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
     function writeSlot(id, data) { localStorage.setItem(slotKeyOf(id), JSON.stringify(data)); }
 
-    function hasActiveCharacter() {
-      const raw = readSlotRaw(getActiveSlotId());
-      if (!raw) return false;
-      try { return Object.keys(JSON.parse(raw)).length > 0; } catch (e) { return true; }
-    }
+     function hasActiveCharacter() {
+       const raw = readSlotRaw(getActiveSlotId());
+       if (!raw) return false;
+       try {
+         const parsed = JSON.parse(raw);
+         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+         return Object.keys(parsed).length > 0;
+       } catch (e) { return true; }
+     }
 
     function migrateStorage() {
       const active = getActiveSlotId();

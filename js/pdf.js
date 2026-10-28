@@ -179,15 +179,15 @@
         const textAreaWidth = w - padding * 2;
         const textAreaHeight = h - 16;
         const cleanVal = (() => {
-          if (!value) return '';
+          if (value == null || value === '') return '';
           const tmp = document.createElement('div');
           tmp.innerHTML = String(value)
-            .replace(/<br\s*\/?>/gi, '\\n')
-            .replace(/<\/p>/gi, '\\n')
-            .replace(/<\/div>/gi, '\\n')
-            .replace(/<\/h[1-6]>/gi, '\\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n')
+            .replace(/<\/div>/gi, '\n')
+            .replace(/<\/h[1-6]>/gi, '\n')
             .replace(/<li>/gi, '• ')
-            .replace(/<\/li>/gi, '\\n');
+            .replace(/<\/li>/gi, '\n');
           return (tmp.textContent || tmp.innerText || '').trim();
         })();
         const lines = wrapText(cleanVal, textAreaWidth, valueSize, font);
@@ -239,7 +239,7 @@
       const armorType = data['rüstungstyp'] || 'Keine';
       const armor = armorData[armorType] || armorData['Keine'];
       const dexAdd = armor.dexCap === null ? mods.GES : (armor.dexCap === 0 ? 0 : Math.min(mods.GES, armor.dexCap));
-      const shieldBonus = data['schild'] ? 2 : 0;
+       const shieldBonus = (data['schild'] === true || data['schild'] === 'true' || data['schild'] === 1 || data['schild'] === '1') ? 2 : 0;
       const acBonus = parseInt(data['ac']) || 0;
       const acAuto = baseAc + armor.bonus + dexAdd + shieldBonus + acBonus;
 
