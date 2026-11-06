@@ -15,7 +15,11 @@
   let user = null;
   let pushTimer = null;
   let dmDirty = false;
+  let channel = null;
+  let dmEcho = 0;
   const dirty = new Set();
+  const ownEcho = new Map();
+  const ownDeleteEcho = new Map();
 
   function readMeta() {
     try { return JSON.parse(localStorage.getItem(META_KEY) || '{}'); } catch (e) { return {}; }
@@ -116,6 +120,7 @@
       return;
     }
     markDmUpdated(new Date().toISOString());
+    dmEcho = Date.now();
   }
 
   async function flushPush() {
@@ -141,12 +146,141 @@
         return;
       }
       markSlotUpdated(id, new Date().toISOString());
+      ownEcho.set(id, Date.now());
+      pruneEchoes();
     }));
     if (dmDirty) await pushDm();
     failed.forEach(x => dirty.add(x));
   }
 
+  function pruneEchoes() {
+    const now = Date.now();
+    [...ownEcho.entries()].forEach(([id, ts]) => { if (now - ts > 20000) ownEcho.delete(id); });
+    [...ownDeleteEcho.entries()].forEach(([id, ts]) => { if (now - ts > 20000) ownDeleteEcho.delete(id); });
+  }
+
+  /* Eine Remote-Zeile in den lokalen Stand ueberfuehren (Pull und Live). */
+  function adoptRemoteRow(row) {
+    if (!row || !row.slot_id) return { touched: false, indexChanged: false };
+    const slotId = row.slot_id;
+    const iso = row.updated_at || '';
+    let touched = false;
+    let indexChanged = false;
+    const idx = L.getSlotIndex();
+    const entry = idx.find(s => s.id === slotId);
+    if (!entry) {
+      idx.push({ id: slotId, name: String(row.name || '') });
+      indexChanged = true;
+    } else if (entry.name !== String(row.name || '')) {
+      entry.name = String(row.name || '');
+      indexChanged = true;
+    }
+    const metaIso = (readMeta().slots || {})[slotId] || '';
+    if (!iso || new Date(iso) > new Date(metaIso || 0)) {
+      const payload = (row.data && typeof row.data === 'object' && !Array.isArray(row.data)) ? row.data : {};
+      L.writeSlot(slotId, payload);
+      markSlotUpdated(slotId, iso);
+      if (slotId === L.getActiveSlotId()) touched = true;
+    } else {
+      dirty.add(slotId);
+    }
+    if (indexChanged) {
+      L.setSlotIndex(idx);
+      L.renderSlotOptions();
+    }
+    return { touched, indexChanged };
+  }
+
+  /* Remote-Gerät hat einen Slot gelöscht. Lokal mitlöschen, außer wenn hier
+   * ungesendete Änderungen liegen (die werden danach wieder hochgeladen). */
+  function processRemoteDelete(slotId) {
+    if (!slotId || dirty.has(slotId)) return;
+    const idx = L.getSlotIndex();
+    const rest = idx.filter(s => s.id !== slotId);
+    if (rest.length === idx.length) return;
+    try { localStorage.removeItem(L.slotKeyOf ? L.slotKeyOf(slotId) : 'dndChar_' + slotId); } catch (e) {}
+    const m = readMeta();
+    if (m.slots) { delete m.slots[slotId]; writeMeta(m); }
+    const wasActive = L.getActiveSlotId() === slotId;
+    if (rest.length === 0) {
+      const nid = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      L.writeSlot(nid, {});
+      rest.push({ id: nid, name: '' });
+    }
+    L.setSlotIndex(rest);
+    L.renderSlotOptions();
+    if (wasActive) {
+      L.setActiveSlotId(rest[0].id);
+      if (typeof resetForm === 'function') resetForm();
+      L.load();
+      if (typeof updateCalcs === 'function') updateCalcs();
+    }
+  }
+
+  function applyRemoteActive(row) {
+    const res = adoptRemoteRow(row);
+    if (res.touched) {
+      if (typeof resetForm === 'function') resetForm();
+      L.load();
+      if (typeof updateCalcs === 'function') updateCalcs();
+    }
+  }
+
+  /* ---- Realtime (Live-Sync über WebSocket) -------------------------------- */
+  function subscribeRealtime() {
+    if (channel || !user) return;
+    channel = client.channel('dnd-live-' + user.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sheets' }, (payload) => {
+        try {
+          if (payload.eventType === 'DELETE') {
+            processRemoteDelete((payload.old || {}).slot_id);
+            return;
+          }
+          const row = (payload.new && typeof payload.new === 'object') ? payload.new : null;
+          if (!row || !row.slot_id) return;
+          if (Date.now() - (ownEcho.get(row.slot_id) || 0) < 10000) {
+            markSlotUpdated(row.slot_id, row.updated_at || '');
+            return;
+          }
+          applyRemoteActive(row);
+        } catch (e) {
+          console.warn('Live-Sync (sheets) Fehler:', (e && e.message) || e);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dm_state' }, (payload) => {
+        try {
+          const row = (payload.new && typeof payload.new === 'object') ? payload.new : null;
+          if (!row || !row.data) return;
+          if (Date.now() - dmEcho < 10000) { markDmUpdated(row.updated_at || ''); return; }
+          const m = readMeta();
+          if (row.updated_at && new Date(row.updated_at) > new Date(m.dm || 0)) {
+            try {
+              localStorage.setItem('dndDM_HP', JSON.stringify((row.data && typeof row.data === 'object') ? row.data : {}));
+            } catch (e) {}
+            markDmUpdated(row.updated_at);
+            document.dispatchEvent(new CustomEvent('dnd-dm-synced'));
+          }
+        } catch (e) {
+          console.warn('Live-Sync (dm) Fehler:', (e && e.message) || e);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('Live-Sync: Kanal-Fehler – Geräte tauschen sich erst beim Reload neu aus.');
+          if (channel) { try { client.removeChannel(channel); } catch (e) {} channel = null; }
+        }
+      });
+  }
+
+  function unsubscribeRealtime() {
+    if (channel) {
+      try { client.removeChannel(channel); } catch (e) {}
+      channel = null;
+    }
+  }
+
   async function pullMerge() {
+    pruneEchoes();
     let rows = null, pullErr = null;
     try {
       const res = await client.from('sheets').select('slot_id,name,data,updated_at');
@@ -155,34 +289,17 @@
     if (pullErr) throw pullErr;
 
     const m = readMeta();
-    const idx = L.getSlotIndex();
     const remoteIds = new Set();
     let activeTouched = false;
-    const activeId = L.getActiveSlotId();
 
     (rows || []).forEach(row => {
       remoteIds.add(row.slot_id);
-      const entry = idx.find(s => s.id === row.slot_id);
-      if (!entry) {
-        idx.push({ id: row.slot_id, name: String(row.name || '') });
-      } else if (entry.name !== String(row.name || '')) {
-        entry.name = String(row.name || '');
-      }
-
-      const iso = row.updated_at || '';
-      const metaIso = (m.slots || {})[row.slot_id] || '';
-      if (!iso || new Date(iso) > new Date(metaIso || 0)) {
-        const payload = (row.data && typeof row.data === 'object' && !Array.isArray(row.data)) ? row.data : {};
-        L.writeSlot(row.slot_id, payload);
-        markSlotUpdated(row.slot_id, iso);
-        if (row.slot_id === activeId) activeTouched = true;
-      } else {
-        dirty.add(row.slot_id);
-      }
+      const r = adoptRemoteRow(row);
+      if (r.touched) activeTouched = true;
     });
 
-    idx.forEach(s => { if (!remoteIds.has(s.id)) dirty.add(s.id); });
-    L.setSlotIndex(idx);
+    L.getSlotIndex().forEach(s => { if (!remoteIds.has(s.id)) dirty.add(s.id); });
+    const idx = L.getSlotIndex();
     if (!L.getActiveSlotId() && idx.length > 0) {
       L.setActiveSlotId(idx[0].id);
       activeTouched = true;
@@ -224,11 +341,15 @@
       console.warn('Cloud-Sync (Pull) fehlgeschlagen:', (e && e.message) || e);
     }
     try { await flushPush(); } catch (e) {}
+    subscribeRealtime();
   }
   function stopSync() {
+    unsubscribeRealtime();
     user = null;
     dirty.clear();
     dmDirty = false;
+    ownEcho.clear();
+    ownDeleteEcho.clear();
     updateAuthUI();
   }
 
@@ -243,6 +364,8 @@
     onLocalDelete(id) {
       if (!user || !id) return;
       dirty.delete(id);
+      ownEcho.delete(id);
+      ownDeleteEcho.set(id, Date.now());
       const m = readMeta();
       if (m.slots) { delete m.slots[id]; writeMeta(m); }
       client.from('sheets')
