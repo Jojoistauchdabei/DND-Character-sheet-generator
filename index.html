@@ -29,6 +29,7 @@
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
         <span class="version-tag">BUILD 11.09.2026-13</span>
+        <span id="authStatus" class="auth-status"></span>
       </div>
     </div>
 
@@ -565,8 +566,11 @@
   </div>
 
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/supabase-config.js"></script>
   <script src="js/sheet.js"></script>
+  <script src="js/sync.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/pdf.js"></script>
   <script src="js/dm.js"></script>
@@ -619,6 +623,28 @@
       <div class="editor-footer">
         <button type="button" class="inactive" onclick="closeTextEditor()">✖ Abbrechen</button>
         <button type="button" onclick="saveTextEditor()">💾 Übernehmen</button>
+      </div>
+    </div>
+  </div>
+  <div id="authOverlay" class="editor-overlay" onclick="if (event.target === this) closeAuthModal()">
+    <div class="editor-modal auth-modal">
+      <div class="editor-header">
+        <div class="editor-header-title">
+          ⚔ KONTO: <span id="authTitle">ANMELDEN / REGISTRIEREN</span>
+        </div>
+        <button type="button" class="mini-button" onclick="closeAuthModal()" style="font-size: 14px; padding: 2px 8px; line-height: 1;">✕</button>
+      </div>
+      <div class="auth-body">
+        <label>E-Mail</label>
+        <input type="email" id="authEmail" autocomplete="email" placeholder="du@beispiel.de">
+        <label>Passwort (min. 6 Zeichen)</label>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••">
+        <div id="authError" class="auth-error" style="display: none;"></div>
+        <div class="auth-actions">
+          <button type="button" onclick="dndSignIn()">🔑 Anmelden</button>
+          <button type="button" class="inactive" onclick="dndSignUp()">➕ Account erstellen</button>
+        </div>
+        <p class="auth-hint">Dein login speichert die Charakter-Slots in der Cloud – auf allen Geräten verfügbar. Ohne Anmeldung funktioniert alles wie gewohnt nur auf diesem Gerät.</p>
       </div>
     </div>
   </div>

@@ -359,7 +359,7 @@
       if (!window.confirm('Diesen Charakter wirklich löschen?')) return;
       const id = getActiveSlotId();
       localStorage.removeItem(slotKeyOf(id));
-      if (window.__convexSync) window.__convexSync.onLocalDelete(id);
+      if (window.__cloudSync) window.__cloudSync.onLocalDelete(id);
       const rest = idx.filter(s => s.id !== id);
       setSlotIndex(rest);
       if (rest.length === 0) {
@@ -709,21 +709,21 @@
       save();
     }
 
-    /* ---- Sync-Anbindung (convex.js) --------------------------------------
-     * Die Brücke nach außen: convex.js läuft als ES-Modul und sieht weder die
+    /* ---- Sync-Anbindung (sync.js) ----------------------------------------
+     * Die Brücke nach außen: sync.js läuft als ES-Modul und sieht weder die
      * `const`-Schlüssel hier noch Funktionen, die nicht explizit am `window`
      * hängen. Statt Schlüssel zu duplizieren, wird alles benannte übergeben.
      */
     window.__dndLocal = {
       SLOT_PREFIX, SLOT_INDEX_KEY, SLOT_ACTIVE_KEY,
       readSlotRaw, writeSlot, getSlotIndex, setSlotIndex,
-      getActiveSlotId, renderSlotOptions, load,
+      getActiveSlotId, setActiveSlotId, renderSlotOptions, load,
     };
 
     /* Meldet eine lokale Änderung an das Sync-Modul. Ohne Anmeldung ist
-     * __convexSync nicht belegt – die App bleibt dann rein lokal. */
+     * __cloudSync nicht belegt – die App bleibt dann rein lokal. */
     function notifySyncChange(id) {
-      if (window.__convexSync && id) window.__convexSync.onLocalChange(id);
+      if (window.__cloudSync && id) window.__cloudSync.onLocalChange(id);
     }
 
     

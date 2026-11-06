@@ -1,5 +1,5 @@
 /* D&D Charakterbogen – Service Worker (App-Shell offline). */
-const CACHE = 'dnd-char-v18';
+const CACHE = 'dnd-char-v19';
 const ASSETS = [
   './',
   'index.html',
@@ -7,7 +7,9 @@ const ASSETS = [
   'manifest.webmanifest',
   'css/styles.css',
   'js/data.js',
+  'js/supabase-config.js',
   'js/sheet.js',
+  'js/sync.js',
   'js/editor.js',
   'js/pdf.js',
   'js/dm.js',

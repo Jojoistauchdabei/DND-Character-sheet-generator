@@ -723,3 +723,47 @@
       .grid3 { grid-template-columns: 1fr; }
       .grid6 { grid-template-columns: 1fr 1fr; }
     }
+
+/* ---- Auth / Cloud-Sync ---- */
+.auth-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+.auth-user {
+  font-size: 11px;
+  color: var(--accent-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-modal { max-width: 400px; }
+.auth-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.auth-body label { font-size: 11px; }
+.auth-body input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.auth-actions { display: flex; gap: 8px; margin-top: 6px; }
+.auth-actions button { flex: 1; }
+.auth-error {
+  background: rgba(150, 40, 40, 0.12);
+  border: 1px solid rgba(150, 40, 40, 0.35);
+  color: #a33;
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+.auth-hint {
+  font-size: 11px;
+  color: var(--accent-muted);
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}

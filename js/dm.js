@@ -138,7 +138,10 @@
     };
     let dmHP = {};
     try { dmHP = JSON.parse(localStorage.getItem('dndDM_HP') || '{}'); } catch(e){ dmHP = {}; }
-    function saveDmHP(){ try{ localStorage.setItem('dndDM_HP', JSON.stringify(dmHP)); }catch(e){} }
+    function saveDmHP(){
+      try{ localStorage.setItem('dndDM_HP', JSON.stringify(dmHP)); }catch(e){}
+      if (window.__cloudSync) window.__cloudSync.saveDmState();
+    }
      function hpOf(id, max){ if(dmHP[id]==null || dmHP[id] > max || dmHP[id] < 0) dmHP[id]=max; return dmHP[id]; }
     function dmgHeal(id, max, delta){
       let cur = hpOf(id, max);
@@ -850,3 +853,9 @@
         threeInitDice();
       }
     }
+
+    /* ---- Cloud-Sync: DM-State von anderen Geraeten uebernehmen ---- */
+    window.addEventListener('dnd-dm-synced', () => {
+      try { dmHP = JSON.parse(localStorage.getItem('dndDM_HP') || '{}'); } catch(e){ dmHP = {}; }
+      if (typeof renderCreatures === 'function') renderCreatures();
+    });
