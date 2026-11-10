@@ -1,5 +1,5 @@
 /* D&D Charakterbogen – Service Worker (App-Shell offline). */
-const CACHE = 'dnd-char-v19';
+const CACHE = 'dnd-char-v20';
 const ASSETS = [
   './',
   'index.html',

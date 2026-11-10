@@ -16,7 +16,7 @@
   let pushTimer = null;
   let dmDirty = false;
   let channel = null;
-  let dmEcho = 0;
+  let dmEcho = null;
   const dirty = new Set();
   const ownEcho = new Map();
   const ownDeleteEcho = new Map();
@@ -113,20 +113,24 @@
 
   async function pushDm() {
     dmDirty = false;
-    const { error } = await client.from('dm_state').upsert({ user_id: user.id, data: safeDmState() });
+    const dmPayload = safeDmState();
+    const { error, data: pushedDmRows } = await client.from('dm_state').upsert({ user_id: user.id, data: (dmPayload && typeof dmPayload === 'object' && !Array.isArray(dmPayload)) ? dmPayload : {} }).select('updated_at');
     if (error) {
       dmDirty = true;
       console.warn('DM-Sync fehlgeschlagen:', error.message);
       return;
     }
-    markDmUpdated(new Date().toISOString());
-    dmEcho = Date.now();
+    const dmIso = Array.isArray(pushedDmRows) && pushedDmRows[0] && pushedDmRows[0].updated_at
+      ? String(pushedDmRows[0].updated_at)
+      : new Date().toISOString();
+    markDmUpdated(dmIso);
+    dmEcho = dmIso;
   }
 
   async function flushPush() {
     if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
     if (!user) return;
-    const ids = [...dirty];
+    const ids = [...dirty].filter(isValidSlotId);
     dirty.clear();
     const failed = new Set();
     await Promise.all(ids.map(async (id) => {
@@ -134,19 +138,24 @@
       if (raw === null || raw === undefined) return;
       let payload;
       try { payload = JSON.parse(raw); } catch (e) { return; }
-      const { error } = await client.from('sheets').upsert({
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) payload = {};
+      const safeName = String(slotNameOf(raw) || '').slice(0, 120);
+      const { error, data: pushedRows } = await client.from('sheets').upsert({
         user_id: user.id,
         slot_id: id,
-        name: slotNameOf(raw),
+        name: safeName,
         data: payload,
-      });
+      }).select('slot_id,updated_at');
       if (error) {
         failed.add(id);
         console.warn('Cloud-Sync (Slot ' + id + ') fehlgeschlagen:', error.message);
         return;
       }
-      markSlotUpdated(id, new Date().toISOString());
-      ownEcho.set(id, Date.now());
+      const pushedIso = Array.isArray(pushedRows) && pushedRows[0] && pushedRows[0].updated_at
+        ? String(pushedRows[0].updated_at)
+        : new Date().toISOString();
+      markSlotUpdated(id, pushedIso);
+      ownEcho.set(id, pushedIso);
       pruneEchoes();
     }));
     if (dmDirty) await pushDm();
@@ -161,7 +170,7 @@
 
   /* Eine Remote-Zeile in den lokalen Stand ueberfuehren (Pull und Live). */
   function adoptRemoteRow(row) {
-    if (!row || !row.slot_id) return { touched: false, indexChanged: false };
+    if (!row || !isValidSlotId(row.slot_id)) return { touched: false, indexChanged: false };
     const slotId = row.slot_id;
     const iso = row.updated_at || '';
     let touched = false;
@@ -194,7 +203,7 @@
   /* Remote-Gerät hat einen Slot gelöscht. Lokal mitlöschen, außer wenn hier
    * ungesendete Änderungen liegen (die werden danach wieder hochgeladen). */
   function processRemoteDelete(slotId) {
-    if (!slotId || dirty.has(slotId)) return;
+    if (!isValidSlotId(slotId) || dirty.has(slotId)) return;
     const idx = L.getSlotIndex();
     const rest = idx.filter(s => s.id !== slotId);
     if (rest.length === idx.length) return;
@@ -227,31 +236,39 @@
   }
 
   /* ---- Realtime (Live-Sync über WebSocket) -------------------------------- */
+  function isValidSlotId(id) {
+    return typeof id === 'string' && id.length > 0 && id.length <= 80 && /^[A-Za-z0-9_-]+$/.test(id);
+  }
+
   function subscribeRealtime() {
     if (channel || !user) return;
+    const userFilter = 'user_id=eq.' + user.id;
     channel = client.channel('dnd-live-' + user.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sheets' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sheets', filter: userFilter }, (payload) => {
         try {
           if (payload.eventType === 'DELETE') {
             processRemoteDelete((payload.old || {}).slot_id);
             return;
           }
           const row = (payload.new && typeof payload.new === 'object') ? payload.new : null;
-          if (!row || !row.slot_id) return;
-          if (Date.now() - (ownEcho.get(row.slot_id) || 0) < 10000) {
-            markSlotUpdated(row.slot_id, row.updated_at || '');
-            return;
+          if (!row || !isValidSlotId(row.slot_id)) return;
+          if (ownEcho.has(row.slot_id)) {
+            if (String(row.updated_at || '') === String(ownEcho.get(row.slot_id))) {
+              ownEcho.delete(row.slot_id);
+              markSlotUpdated(row.slot_id, row.updated_at || '');
+              return;
+            }
           }
           applyRemoteActive(row);
         } catch (e) {
           console.warn('Live-Sync (sheets) Fehler:', (e && e.message) || e);
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dm_state' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dm_state', filter: userFilter }, (payload) => {
         try {
           const row = (payload.new && typeof payload.new === 'object') ? payload.new : null;
           if (!row || !row.data) return;
-          if (Date.now() - dmEcho < 10000) { markDmUpdated(row.updated_at || ''); return; }
+          if (String(row.updated_at || '') === String(dmEcho)) { dmEcho = null; markDmUpdated(row.updated_at || ''); return; }
           const m = readMeta();
           if (row.updated_at && new Date(row.updated_at) > new Date(m.dm || 0)) {
             try {
@@ -293,6 +310,7 @@
     let activeTouched = false;
 
     (rows || []).forEach(row => {
+      if (!isValidSlotId(row && row.slot_id)) return;
       remoteIds.add(row.slot_id);
       const r = adoptRemoteRow(row);
       if (r.touched) activeTouched = true;
@@ -357,12 +375,12 @@
   window.__cloudSync = {
     get enabled() { return !!user; },
     onLocalChange(id) {
-      if (!user || !id) return;
+      if (!user || !isValidSlotId(id)) return;
       dirty.add(id);
       schedulePush();
     },
     onLocalDelete(id) {
-      if (!user || !id) return;
+      if (!user || !isValidSlotId(id)) return;
       dirty.delete(id);
       ownEcho.delete(id);
       ownDeleteEcho.set(id, Date.now());
