@@ -10,7 +10,7 @@
       const editorContent = document.getElementById('editorContent');
       if (titleSpan) titleSpan.textContent = (title || targetId).toUpperCase();
       if (editorContent) {
-        editorContent.innerHTML = targetEl.innerHTML;
+        editorContent.innerHTML = typeof sanitizeRichHtml === 'function' ? sanitizeRichHtml(targetEl.innerHTML) : targetEl.innerHTML;
       }
       if (overlay) {
         overlay.classList.add('active');
@@ -29,7 +29,7 @@
       const targetEl = document.getElementById(currentEditorTargetId);
       const editorContent = document.getElementById('editorContent');
       if (targetEl && editorContent) {
-        targetEl.innerHTML = editorContent.innerHTML;
+        targetEl.innerHTML = typeof sanitizeRichHtml === 'function' ? sanitizeRichHtml(editorContent.innerHTML) : editorContent.innerHTML;
         save();
       }
       closeTextEditor();

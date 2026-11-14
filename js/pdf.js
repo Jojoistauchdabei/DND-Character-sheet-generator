@@ -180,15 +180,18 @@
         const textAreaHeight = h - 16;
         const cleanVal = (() => {
           if (value == null || value === '') return '';
-          const tmp = document.createElement('div');
-          tmp.innerHTML = String(value)
+          const html = String(value)
             .replace(/<br\s*\/?>/gi, '\n')
             .replace(/<\/p>/gi, '\n')
             .replace(/<\/div>/gi, '\n')
             .replace(/<\/h[1-6]>/gi, '\n')
             .replace(/<li>/gi, '• ')
             .replace(/<\/li>/gi, '\n');
-          return (tmp.textContent || tmp.innerText || '').trim();
+          try {
+            return (new DOMParser().parseFromString(html, 'text/html').body.textContent || '').trim();
+          } catch (e) {
+            return html.replace(/<[^>]+>/g, ' ').trim();
+          }
         })();
         const lines = wrapText(cleanVal, textAreaWidth, valueSize, font);
         const maxLines = Math.max(1, Math.floor(textAreaHeight / (valueSize + 2)));

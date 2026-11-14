@@ -9,6 +9,7 @@
   if (!L) return;
 
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.__supabase = client;
   const META_KEY = 'dndCloudMeta';
   const PUSH_DEBOUNCE_MS = 2500;
 

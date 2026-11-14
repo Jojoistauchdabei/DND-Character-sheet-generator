@@ -81,6 +81,7 @@
       const pages = [
         { n: 1, t: 'Seite 1' }, { n: 2, t: 'Seite 2' }, { n: 3, t: 'Seite 3' }, { n: 4, t: 'Seite 4' },
         { n: 'DM', t: '⚔ DM-Modus', dm: true },
+        { n: 'ADMIN', t: 'Admin' },
       ];
       pages.forEach(p => {
         const btn = document.createElement('button');
@@ -180,10 +181,11 @@
       if (target) target.classList.add('active');
       const pageBtns = [...document.querySelectorAll('#nav > button')];
       pageBtns.forEach(b => b.classList.remove('active'));
-      const order = [1,2,3,4,'DM'];
+      const order = [1,2,3,4,'DM','ADMIN'];
       const idx = order.indexOf(n);
       if (pageBtns[idx]) pageBtns[idx].classList.add('active');
       if (n === 'DM') initDM();
+      if (n === 'ADMIN') loadAdminStats();
     }
 
     function collectData() {
@@ -193,7 +195,7 @@
           if (el.type === 'checkbox') {
             data[el.id] = el.checked;
           } else if (el.isContentEditable) {
-            data[el.id] = el.innerHTML;
+            data[el.id] = typeof sanitizeRichHtml === 'function' ? sanitizeRichHtml(el.innerHTML) : el.innerHTML;
           } else {
             data[el.id] = el.value;
           }
@@ -228,7 +230,7 @@
             const v = data[key];
             el.checked = (v === true || v === 'true' || v === 1 || v === '1');
           } else if (el.isContentEditable) {
-            el.innerHTML = data[key] || '';
+            el.innerHTML = typeof sanitizeRichHtml === 'function' ? sanitizeRichHtml(data[key]) : (data[key] || '');
           } else {
             el.value = data[key];
           }

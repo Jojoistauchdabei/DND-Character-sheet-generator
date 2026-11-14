@@ -585,6 +585,7 @@
       const dots=document.getElementById('creatorSteps');
       const body=document.getElementById('creatorBody');
       if(!dots||!body) return;
+      const esc = (s)=> (typeof escapeHtml==='function'?escapeHtml(s):String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
       dots.innerHTML='';
       CREATOR_TITLES.forEach((t,i)=>{
         const d=document.createElement('div');
@@ -599,19 +600,19 @@
       if(nextBtn) nextBtn.disabled = creatorState.step === CREATOR_TITLES.length - 1;
       const s=creatorState;
       if(s.step===0){
-        body.innerHTML='<label>Volk wählen</label><div class="pick-grid">'+CREATOR_VOLK.map(v=>`<div class="pick-card ${s.volk===v.n?'selected':''}" onclick="creatorPickVolk('${v.n}')"><b>${v.n}</b><span>${v.b}<br>${v.d}</span></div>`).join('')+'</div>';
+        body.innerHTML='<label>Volk wählen</label><div class="pick-grid">'+CREATOR_VOLK.map(v=>`<div class="pick-card ${s.volk===v.n?'selected':''}" onclick="creatorPickVolk('${esc(v.n)}')"><b>${esc(v.n)}</b><span>${esc(v.b)}<br>${esc(v.d)}</span></div>`).join('')+'</div>';
       } else if(s.step===1){
-        body.innerHTML='<label>Klasse wählen</label><div class="pick-grid">'+CREATOR_KLASSE.map(v=>`<div class="pick-card ${s.klasse===v.n?'selected':''}" onclick="creatorPickKlasse('${v.n}')"><b>${v.n}</b><span>${v.b}<br>${v.d}</span></div>`).join('')+'</div>';
+        body.innerHTML='<label>Klasse wählen</label><div class="pick-grid">'+CREATOR_KLASSE.map(v=>`<div class="pick-card ${s.klasse===v.n?'selected':''}" onclick="creatorPickKlasse('${esc(v.n)}')"><b>${esc(v.n)}</b><span>${esc(v.b)}<br>${esc(v.d)}</span></div>`).join('')+'</div>';
       } else if(s.step===2){
         const rows=Object.keys(s.attrs).map(k=>{
           const m=Math.floor((s.attrs[k]-10)/2);
-          return `<div class="attr-row"><span class="attr-key">${k}</span><button type="button" class="mini-button" onclick="creatorAttr('${k}',-1)">−</button><span class="attr-val">${s.attrs[k]} (${m>=0?'+':''}${m})</span><button type="button" class="mini-button" onclick="creatorAttr('${k}',1)">+</button></div>`;
+          return `<div class="attr-row"><span class="attr-key">${esc(k)}</span><button type="button" class="mini-button" onclick="creatorAttr('${esc(k)}',-1)">−</button><span class="attr-val">${Number(s.attrs[k])||0} (${m>=0?'+':''}${m})</span><button type="button" class="mini-button" onclick="creatorAttr('${esc(k)}',1)">+</button></div>`;
         }).join('');
         body.innerHTML=`<label>Werte setzen oder 4W6 würfeln</label><div class="attr-list">${rows}</div><div class="dm-toolbar"><button type="button" class="mini-button" onclick="creatorRollAttrs()">🎲 4W6 (niedrigster weg)</button><button type="button" class="mini-button" onclick="creatorStandardArray()">Standard-Array</button></div>`;
       } else if(s.step===3){
-        body.innerHTML=`<div class="grid2"><div><label>Charaktername</label><input type="text" id="creatorName" value="${s.name}" oninput="creatorState.name=this.value"></div><div><label>Hintergrund</label><input type="text" id="creatorHintergrund" value="${s.hintergrund}" oninput="creatorState.hintergrund=this.value"></div></div><div style="margin-top:8px;"><label>Gesinnung</label><select id="creatorGesinnung" onchange="creatorState.gesinnung=this.value">${['Rechtschaffen Gut','Neutral Gut','Chaotisch Gut','Rechtschaffen Neutral','Neutral','Chaotisch Neutral','Rechtschaffen Böse','Neutral Böse','Chaotisch Böse'].map(g=>`<option ${s.gesinnung===g?'selected':''}>${g}</option>`).join('')}</select></div><p style="font-size:13px;margin-top:8px;">Volk: <b>${s.volk}</b> • Klasse: <b>${s.klasse}</b></p>`;
+        body.innerHTML=`<div class="grid2"><div><label>Charaktername</label><input type="text" id="creatorName" value="${esc(s.name)}" oninput="creatorState.name=this.value"></div><div><label>Hintergrund</label><input type="text" id="creatorHintergrund" value="${esc(s.hintergrund)}" oninput="creatorState.hintergrund=this.value"></div></div><div style="margin-top:8px;"><label>Gesinnung</label><select id="creatorGesinnung" onchange="creatorState.gesinnung=this.value">${['Rechtschaffen Gut','Neutral Gut','Chaotisch Gut','Rechtschaffen Neutral','Neutral','Chaotisch Neutral','Rechtschaffen Böse','Neutral Böse','Chaotisch Böse'].map(g=>`<option ${s.gesinnung===g?'selected':''}>${esc(g)}</option>`).join('')}</select></div><p style="font-size:13px;margin-top:8px;">Volk: <b>${esc(s.volk)}</b> · Klasse: <b>${esc(s.klasse)}</b></p>`;
       } else {
-        body.innerHTML=`<div class="dm-card"><h3 style="font-size:16px;">✨ Bereit!</h3><div class="text"><b>${s.name||'(namenlos)'}</b> – ${s.volk} ${s.klasse}<br><span class="sub">${s.hintergrund} • ${s.gesinnung}</span></div><div class="stat-row">${Object.keys(s.attrs).map(k=>`<span class="dm-chip">${k} ${s.attrs[k]}</span>`).join('')}</div><div class="text sub">„Auf Bogen übernehmen" schreibt die Werte auf den Charakterbogen. Mit der Checkbox darunter wird ein neuer Slot angelegt.</div></div>`;
+        body.innerHTML=`<div class="dm-card"><h3 style="font-size:16px;">✓ Bereit!</h3><div class="text"><b>${esc(s.name||'(namenlos)')}</b> – ${esc(s.volk)} ${esc(s.klasse)}<br><span class="sub">${esc(s.hintergrund)} · ${esc(s.gesinnung)}</span></div><div class="stat-row">${Object.keys(s.attrs).map(k=>`<span class="dm-chip">${esc(k)} ${Number(s.attrs[k])||0}</span>`).join('')}</div><div class="text sub">„Auf Bogen übernehmen“ schreibt die Werte auf den Charakterbogen. Mit der Checkbox darunter wird ein neuer Slot angelegt.</div></div>`;
       }
     }
     function creatorPickVolk(n){ creatorState.volk=n; renderCreator(); }
@@ -711,6 +712,7 @@
     function loadPartyFromSlots(){
       const box=document.getElementById('partyList');
       if(!box) return;
+      const esc = (s)=> (typeof escapeHtml==='function'?escapeHtml(s):String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
       box.innerHTML='';
       const idx=getSlotIndex();
       if(!idx.length){ box.innerHTML='<p class="dm-empty">Noch keine Charaktere angelegt.</p>'; return; }
@@ -720,7 +722,7 @@
         const nm=d.charaktername||s.name||'(unbenannt)';
         const row=document.createElement('label');
         row.className='dm-row';
-        row.innerHTML=`<input type="checkbox" checked data-plvl="${lvl}"><span class="dm-row-name"><b>${nm}</b> · Stufe ${lvl}</span><span class="dm-chip">TP ${d.tpmax||'?'}</span>`;
+        row.innerHTML=`<input type="checkbox" checked data-plvl="${lvl}"><span class="dm-row-name"><b>${esc(nm)}</b> · Stufe ${lvl}</span><span class="dm-chip">TP ${esc(d.tpmax||'?')}</span>`;
         box.appendChild(row);
       });
     }

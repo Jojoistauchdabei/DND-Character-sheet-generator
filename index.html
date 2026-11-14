@@ -28,7 +28,7 @@
         <button onclick="document.getElementById('importPdfFile').click()">⬆ Import PDF</button>
         <input id="importFile" type="file" accept=".json" onchange="importJSON(event)" style="display: none;">
         <input id="importPdfFile" type="file" accept=".pdf,application/pdf" onchange="importPDF(event)" style="display: none;">
-        <span class="version-tag">BUILD 11.09.2026-13</span>
+        <span class="version-tag">BUILD 11.11.2026-14</span>
         <span id="authStatus" class="auth-status"></span>
       </div>
     </div>
@@ -562,6 +562,21 @@
         </div>
       </div>
     </div>
+    <!-- Admin Dashboard -->
+    <div class="page" id="pageAdmin">
+      <div class="box">
+        <div class="admin-head">
+          <div>
+            <h2 class="admin-title">Admin-Dashboard</h2>
+            <div class="admin-sub">App-Statistiken & Stand: <span id="adminGeneratedAt">-</span></div>
+          </div>
+          <button type="button" class="inactive" onclick="loadAdminStats()">Aktualisieren</button>
+        </div>
+        <div id="adminContent">
+          <div class="admin-loading">Statistiken werden geladen ...</div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -575,6 +590,7 @@
   <script src="js/pdf.js"></script>
   <script src="js/dm.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/admin.js"></script>
   <div id="editorOverlay" class="editor-overlay" onclick="if (event.target === this) closeTextEditor()">
     <div class="editor-modal">
       <div class="editor-header">

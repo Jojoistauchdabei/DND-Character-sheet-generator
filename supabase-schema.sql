@@ -20,6 +20,16 @@ create table if not exists public.sheets (
   primary key (user_id, slot_id)
 );
 
+-- Härten: slot_id begrenzen/formatieren (idempotent für Bestands-DBs)
+do $$
+begin
+  alter table public.sheets
+    add constraint sheets_slot_id_format
+    check (char_length(slot_id) between 1 and 80 and slot_id ~ '^[A-Za-z0-9_-]+$');
+exception
+  when duplicate_object then null;
+end $$;
+
 -- ------------------------------------------------------------
 -- DM-Zustand (HP-Tracker der Kreaturen etc.)
 -- ------------------------------------------------------------

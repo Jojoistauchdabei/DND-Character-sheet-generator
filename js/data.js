@@ -68,6 +68,51 @@
     const fmtMod = (v) => v >= 0 ? `+${v}` : `${v}`;
     const safeFilename = (name) => String(name || '').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'charakter';
 
+    /* Sicherheits-Helfer: HTML escapen + Rich-Text aus dem Editor bereinigen
+     * (verhindert Script-Injection aus Import/Sync, ohne Formatierung zu verlieren). */
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    function sanitizeRichHtml(html) {
+      if (html == null) return '';
+      const raw = String(html);
+      if (!raw) return '';
+      const tpl = document.createElement('template');
+      tpl.innerHTML = raw;
+      const allowed = new Set(['P','BR','DIV','SPAN','B','STRONG','I','EM','U','S','STRIKE','DEL','H1','H2','H3','UL','OL','LI','HR','FONT','BLOCKQUOTE','SUB','SUP']);
+      const isSafeUrl = (v) => /^(https?:|mailto:|#|\/|\.\/|\.\.\/)/i.test(String(v || '').trim());
+      const clean = (node) => {
+        [...node.childNodes].forEach(child => {
+          if (child.nodeType === 1) {
+            const tag = child.tagName;
+            [...child.attributes].forEach(a => {
+              const n = a.name.toLowerCase();
+              const v = a.value;
+              if (n.startsWith('on')) { child.removeAttribute(a.name); return; }
+              if ((n === 'href' || n === 'src' || n === 'xlink:href') && !isSafeUrl(v)) { child.removeAttribute(a.name); return; }
+              if (n === 'style' && /expression|javascript:|url\s*\(/i.test(v)) { child.removeAttribute(a.name); return; }
+              if (!['style','class','size','face','color','href','target','rel'].includes(n)) child.removeAttribute(a.name);
+            });
+            if (tag === 'A') child.setAttribute('rel', 'noopener noreferrer');
+            if (!allowed.has(tag)) {
+              const frag = document.createDocumentFragment();
+              clean(child);
+              while (child.firstChild) frag.appendChild(child.firstChild);
+              child.replaceWith(frag);
+              return;
+            }
+            clean(child);
+          } else if (child.nodeType === 8) {
+            child.remove();
+          }
+        });
+      };
+      clean(tpl.content);
+      return tpl.innerHTML;
+    }
+
+
     const pdfLibSources = [
       'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js',
       'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
