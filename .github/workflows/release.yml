@@ -122,16 +122,16 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          ANDROID_DIR=src-tauri/gen/android
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > keystore.jks
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > $ANDROID_DIR/keystore.jks
           else
             echo "::warning::Keine ANDROID_KEYSTORE_* Secrets gesetzt - es wird ein Bootstrap-Keystore erzeugt (als Artifact hochgeladen)."
-            keytool -genkeypair -v -keystore keystore.jks -alias dnd -keyalg RSA -keysize 2048 -validity 10000 -storepass dndbootstrap -keypass dndbootstrap -dname "CN=DnD Charakterbogen, OU=DnD, O=DnD, L=Internet, C=DE"
+            keytool -genkeypair -v -keystore $ANDROID_DIR/keystore.jks -alias dnd -keyalg RSA -keysize 2048 -validity 10000 -storepass dndbootstrap -keypass dndbootstrap -dname "CN=DnD Charakterbogen, OU=DnD, O=DnD, L=Internet, C=DE"
           fi
-          echo "TAURI_ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/keystore.jks" >> $GITHUB_ENV
-          echo "TAURI_ANDROID_KEYSTORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD:-dndbootstrap}" >> $GITHUB_ENV
-          echo "TAURI_ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS:-dnd}" >> $GITHUB_ENV
-          echo "TAURI_ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD:-dndbootstrap}" >> $GITHUB_ENV
+          echo "keyAlias=${ANDROID_KEY_ALIAS:-dnd}" > $ANDROID_DIR/keystore.properties
+          echo "password=${ANDROID_KEY_PASSWORD:-dndbootstrap}" >> $ANDROID_DIR/keystore.properties
+          echo "storeFile=$PWD/$ANDROID_DIR/keystore.jks" >> $ANDROID_DIR/keystore.properties
 
       - name: APK bauen (arm64)
         run: npx tauri android build --apk --target aarch64
@@ -141,24 +141,29 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-keystore
-          path: keystore.jks
+          path: src-tauri/gen/android/keystore.jks
           retention-days: 7
+
+      - name: APK umbenennen
+        run: |
+          APK=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -n 1)
+          cp "$APK" DnD-Charakterbogen-${{ inputs.tag || github.ref_name }}-android.apk
 
       - name: Paketgroessen in Job-Summary
         run: |
           echo "## Android-Pakete" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' -exec ls -lh {} \; | awk '{print $5, $NF}' >> $GITHUB_STEP_SUMMARY
+          ls -lh DnD-Charakterbogen-*-android.apk >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: APKs an Release haengen
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
+          files: DnD-Charakterbogen-*-android.apk
 
   security:
     runs-on: ubuntu-latest
