@@ -1,0 +1,180 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ''
+          - platform: ubuntu-latest
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-gnu' || 'x86_64-pc-windows-msvc' }}
+
+      - name: Linux-Abhaengigkeiten (WebKitGTK)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev patchelf
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: npm ci
+        run: npm ci
+
+      - name: dist/ bauen
+        run: npm run build:dist
+
+      - name: Tauri bauen + Release befuellen
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'D&D Charakterbogen ${{ github.ref_name }}'
+          releaseBody: 'Windows-Installer (.exe), Linux AppImage und Android-APK in den Assets. Siehe Hinweise unten.'
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Paketgroessen in Job-Summary
+        shell: bash
+        run: |
+          echo "## Desktop-Pakete (${{
+            matrix.platform == 'windows-latest' && 'Windows' || 'Linux'
+          }})" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find src-tauri/target/release/bundle -type f \( -name '*.exe' -o -name '*.AppImage' -o -name '*.deb' \) -exec ls -lh {} \; 2>/dev/null | awk '{print $5, $NF}' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Android NDK installieren
+        run: |
+          sdkmanager --install "ndk;27.0.12077973" >/dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+
+      - name: npm ci
+        run: npm ci
+
+      - name: dist/ bauen
+        run: npm run build:dist
+
+      - name: Tauri Android initialisieren
+        run: npx tauri android init
+
+      - name: Keystore vorbereiten (Secret oder Bootstrap)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > keystore.jks
+          else
+            echo "::warning::Keine ANDROID_KEYSTORE_* Secrets gesetzt - es wird ein Bootstrap-Keystore erzeugt (als Artifact hochgeladen)."
+            keytool -genkeypair -v -keystore keystore.jks -alias dnd -keyalg RSA -keysize 2048 -validity 10000 -storepass dndbootstrap -keypass dndbootstrap -dname "CN=DnD Charakterbogen, OU=DnD, O=DnD, L=Internet, C=DE"
+          fi
+          echo "TAURI_ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/keystore.jks" >> $GITHUB_ENV
+          echo "TAURI_ANDROID_KEYSTORE_PASSWORD=${ANDROID_KEYSTORE_PASSWORD:-dndbootstrap}" >> $GITHUB_ENV
+          echo "TAURI_ANDROID_KEY_ALIAS=${ANDROID_KEY_ALIAS:-dnd}" >> $GITHUB_ENV
+          echo "TAURI_ANDROID_KEY_PASSWORD=${ANDROID_KEY_PASSWORD:-dndbootstrap}" >> $GITHUB_ENV
+
+      - name: APK bauen (arm64)
+        run: npx tauri android build --apk --target aarch64
+
+      - name: Keystore als Artifact sichern
+        if: env.ANDROID_KEYSTORE_BASE64 == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-keystore
+          path: keystore.jks
+          retention-days: 7
+
+      - name: Paketgroessen in Job-Summary
+        run: |
+          echo "## Android-Pakete" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' -exec ls -lh {} \; | awk '{print $5, $NF}' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: APKs an Release haengen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: npm audit (Laufzeit-Abhaengigkeiten)
+        run: npm audit --omit=dev || true
+
+      - name: Cargo-Lockfile erzeugen
+        working-directory: src-tauri
+        run: cargo generate-lockfile
+
+      - name: Rust-Abhaengigkeiten auditen (RustSec)
+        uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: src-tauri

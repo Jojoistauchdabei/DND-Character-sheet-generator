@@ -1,0 +1,20 @@
+{
+  "name": "dnd-character-sheet-generator",
+  "version": "1.0.0",
+  "description": "D&D 5E Charakterbogen – PWA + Desktop/Mobile Builds (Tauri)",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build:dist": "node scripts/build-dist.mjs",
+    "tauri": "tauri"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jojoistauchdabei/DND-Character-sheet-generator.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4"
+  }
+}

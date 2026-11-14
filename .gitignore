@@ -4,3 +4,9 @@
 !.dev.vars.example
 .env*
 !.env.example
+
+# tauri / build files
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
