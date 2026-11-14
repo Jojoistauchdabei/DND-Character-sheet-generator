@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release-Tag (z. B. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
 
 permissions:
   contents: write
@@ -54,7 +59,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
+          tagName: ${{ inputs.tag || github.ref_name }}
           releaseName: 'D&D Charakterbogen ${{ github.ref_name }}'
           releaseBody: 'Windows-Installer (.exe), Linux AppImage und Android-APK in den Assets. Siehe Hinweise unten.'
           releaseDraft: false
@@ -149,7 +154,7 @@ jobs:
       - name: APKs an Release haengen
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           draft: false
           prerelease: false
@@ -179,3 +184,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: src-tauri
+
