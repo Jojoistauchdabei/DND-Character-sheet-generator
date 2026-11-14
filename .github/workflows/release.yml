@@ -95,8 +95,9 @@ jobs:
 
       - name: Android SDK-Lizenzen + NDK installieren
         run: |
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager --install "ndk;27.0.12077973" >/dev/null
+          SDKM=$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager
+          yes | $SDKM --licenses >/dev/null
+          $SDKM --install "ndk;27.0.12077973" >/dev/null
           echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
       - name: npm ci
