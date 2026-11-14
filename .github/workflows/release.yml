@@ -93,10 +93,9 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Android NDK installieren
+      - name: Android SDK-Lizenzen + NDK installieren
         run: |
+          yes | sdkmanager --licenses >/dev/null
           sdkmanager --install "ndk;27.0.12077973" >/dev/null
           echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
