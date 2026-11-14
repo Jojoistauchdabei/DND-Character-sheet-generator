@@ -142,12 +142,13 @@ jobs:
                   create("cicirelease") {
                       val kpFile = rootProject.file("keystore.properties")
                       if (kpFile.exists()) {
-                          val kp = java.util.Properties()
-                          kp.load(java.io.FileInputStream(kpFile))
-                          keyAlias = kp.getProperty("keyAlias") ?: ""
-                          keyPassword = kp.getProperty("password") ?: ""
-                          storeFile = kp.getProperty("storeFile")?.let { java.io.File(it) }
-                          storePassword = kp.getProperty("password") ?: ""
+                          val map = kpFile.readLines()
+                              .filter { it.contains('=') }
+                              .associate { val i = it.indexOf('='); it.substring(0, i).trim() to it.substring(i + 1).trim() }
+                          keyAlias = map["keyAlias"] ?: ""
+                          keyPassword = map["password"] ?: ""
+                          storeFile = map["storeFile"]?.let { file(it) }
+                          storePassword = map["password"] ?: ""
                       }
                   }
               }
