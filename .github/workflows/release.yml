@@ -137,22 +137,24 @@ jobs:
         run: |
           cat >> src-tauri/gen/android/app/build.gradle.kts <<'EOF'
 
-          signingConfigs {
-              create("cicirelease") {
-                  val kpFile = rootProject.file("keystore.properties")
-                  if (kpFile.exists()) {
-                      val kp = java.util.Properties()
-                      kp.load(java.io.FileInputStream(kpFile))
-                      keyAlias = kp.getProperty("keyAlias") ?: ""
-                      keyPassword = kp.getProperty("password") ?: ""
-                      storeFile = kp.getProperty("storeFile")?.let { java.io.File(it) }
-                      storePassword = kp.getProperty("password") ?: ""
+          android {
+              signingConfigs {
+                  create("cicirelease") {
+                      val kpFile = rootProject.file("keystore.properties")
+                      if (kpFile.exists()) {
+                          val kp = java.util.Properties()
+                          kp.load(java.io.FileInputStream(kpFile))
+                          keyAlias = kp.getProperty("keyAlias") ?: ""
+                          keyPassword = kp.getProperty("password") ?: ""
+                          storeFile = kp.getProperty("storeFile")?.let { java.io.File(it) }
+                          storePassword = kp.getProperty("password") ?: ""
+                      }
                   }
               }
-          }
-          buildTypes {
-              getByName("release") {
-                  signingConfig = signingConfigs.getByName("cicirelease")
+              buildTypes {
+                  getByName("release") {
+                      signingConfig = signingConfigs.getByName("cicirelease")
+                  }
               }
           }
           EOF
